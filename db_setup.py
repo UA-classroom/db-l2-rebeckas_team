@@ -30,8 +30,24 @@ def create_tables():
     A function to create the necessary tables for the project.
     """
     connection = get_connection()
-    # Implement
-    pass
+    cursor = connection.cursor()
+    
+    # --- USERS ---
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        role VARCHAR(20) NOT NULL,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        phone TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+    );
+    """)
+    
+    connection.commit()
+    cursor.close()
+    connection.close()
+    
 
 
 if __name__ == "__main__":
