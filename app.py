@@ -64,6 +64,10 @@ def create_business(business: BusinessCreate):
 #-------------------------#
 @app.put("/businesses/{business_id}", response_model=BusinessOut)
 def update_business(business_id: int, data: BusinessUpdate):
+    """
+    PUT /businesses/{business_id}
+    Updates an existing business and returns the updated record.
+    """
     con = get_connection()
     updated = db.update_business(con, business_id, data)
 
@@ -71,4 +75,21 @@ def update_business(business_id: int, data: BusinessUpdate):
         raise HTTPException(status_code=404, detail="Business not found")
 
     return updated
+
+#-------------------------#
+#---------DELETE----------#
+#-------------------------#
+@app.delete("/businesses/{business_id}", status_code=204)
+def delete_business(business_id: int):
+    """
+    DELETE /businesses/{business_id}
+    Deletes an existing business.
+    """
+    con = get_connection()
+    deleted = db.delete_business(con, business_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Business not found")
+
+    return None
 

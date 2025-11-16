@@ -19,7 +19,9 @@ start with a connection parameter.
 """
 
 
-#GET
+#-------------------------#
+#----------GET------------#
+#-------------------------#
 def get_all_businesses(con):
     """
     Return a list of all businesses
@@ -42,7 +44,9 @@ def get_business_by_id(con, business_id: int):
     return business
 
 
-#POST
+#-------------------------#
+#---------POST------------#
+#-------------------------#
 def create_business(con, data):
     """
     Insert a new business into the database and return its id.
@@ -78,15 +82,17 @@ def create_business(con, data):
             business_id = cursor.fetchone()["id"]
     return business_id
 
-#PUT
+#-------------------------#
+#----------PUT------------#
+#-------------------------#
 def update_business(con, business_id: int, data):
     """
     Update an existing business based on business_id.
-    The updated row is returned as a dictionary
+    The updated business is returned as a dictionary
     """
     with con:
-        with con.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
                 """
                 UPDATE businesses
                 SET owner_id = %s,
@@ -112,5 +118,22 @@ def update_business(con, business_id: int, data):
                     business_id,
                 ),
             )
-            updated = cur.fetchone()
+            updated = cursor.fetchone()
             return updated
+
+#-------------------------#
+#---------DELETE----------#
+#-------------------------#
+def delete_business(con, business_id: int):
+    """
+    Deletes an existing business based on business_id.
+    Returns the deleted business_id if the deletion was successful.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM businesses WHERE id = %s RETURNING id;",
+                (business_id,)
+            )
+            deleted = cursor.fetchone()
+            return deleted
