@@ -21,19 +21,24 @@ class BusinessBase(BaseModel):
     city: Optional[str] = None
     postal_code: Optional[str] = None
 
+
+#I put owner_id only in the POST/PUT models because it is not a 
+# core attribute of the business — it is a foreign key that 
+# #is only relevant when creating or updating a business and does not
+# #effect the identity of the business.
 class BusinessCreate(BusinessBase):
     """
     Used when a client creates a new business (POST).
     Requires the owner_id and name fields, other fields are optional.
     """
-    owner_id: int   # required on POST
+    owner_id: int
 
 class BusinessUpdate(BusinessBase):
     """
     Used for full replacement of a business (PUT).
     All required fields must be included and will overwrite existing values.
     """
-    owner_id: int   # required on PUT
+    owner_id: int
 
 class BusinessOut(BusinessBase):
     """
@@ -43,3 +48,9 @@ class BusinessOut(BusinessBase):
     id: int
     owner_id: int
     created_at: datetime
+
+
+#-----------------#
+#-------USERS-----#
+#-----------------#
+
