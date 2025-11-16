@@ -22,7 +22,7 @@ but will have different HTTP-verbs.
 #-------------------------#
 #----------GET------------#
 #-------------------------#
-@app.get("/businesses", response_model=list[BusinessOut])
+@app.get("/businesses/", response_model=list[BusinessOut])
 def list_businesses():
     """
     GET /businesses

@@ -6,62 +6,40 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
-
-#-------------------------#
-#----------GET------------#
-#-------------------------#
-class BusinessOut(BaseModel):
+#-----------------#
+#-----BUSINESS----#
+#-----------------#
+class BusinessBase(BaseModel):
     """
-    Used when we RETURN a business to the client (GET).
-    Includes id and created_at.
+    Shared fields used by both creation and update operations for business.
+    """
+    main_category_id: Optional[int] = None
+    name: str
+    description: Optional[str] = None
+    street_name: Optional[str] = None
+    street_number: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+
+class BusinessCreate(BusinessBase):
+    """
+    Used when a client creates a new business (POST).
+    Requires the owner_id and name fields, other fields are optional.
+    """
+    owner_id: int   # required on POST
+
+class BusinessUpdate(BusinessBase):
+    """
+    Used for full replacement of a business (PUT).
+    All required fields must be included and will overwrite existing values.
+    """
+    owner_id: int   # required on PUT
+
+class BusinessOut(BusinessBase):
+    """
+    Returned to the client when reading business data (GET).
+    Includes database-generated fields such as id and created_at.
     """
     id: int
     owner_id: int
-    main_category_id: Optional[int] = None
-    name: str
-    description: Optional[str] = None
-    street_name: Optional[str] = None
-    street_number: Optional[str] = None
-    city: Optional[str] = None
-    postal_code: Optional[str] = None
     created_at: datetime
-
-#-------------------------#
-#---------POST------------#
-#-------------------------#
-class BusinessCreate(BaseModel):
-    """
-    Used when a client creates a business (POST).
-    Mandatory to send owner_id(int) and name(string max 30 characters)
-    Optional: main_category_id(int), description(string), street_name(sting),
-    street_number(string), city(string), postal_code(string)
-    """
-    owner_id: int
-    main_category_id: Optional[int] = None
-    name: str
-    description: Optional[str] = None
-    street_name: Optional[str] = None
-    street_number: Optional[str] = None
-    city: Optional[str] = None
-    postal_code: Optional[str] = None
-
-
-#-------------------------#
-#----------PUT------------#
-#-------------------------#
-class BusinessUpdate(BaseModel):
-    """
-    Used when we REPLACE a business (PUT).
-    Mandatory to send key business_id(int), owner_id(int) and name(string max 30 characters)
-    Optional: main_category_id(int), description(string), street_name(sting),
-    street_number(string), city(string), postal_code(string)
-    """
-    owner_id: int
-    main_category_id: Optional[int] = None
-    name: str
-    description: Optional[str] = None
-    street_name: Optional[str] = None
-    street_number: Optional[str] = None
-    city: Optional[str] = None
-    postal_code: Optional[str] = None
-
