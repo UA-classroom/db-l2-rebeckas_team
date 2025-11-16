@@ -1,9 +1,10 @@
 import os
-
 import psycopg2
 from db_setup import get_connection
 from fastapi import FastAPI, HTTPException
 
+import db
+from schemas import BusinessCreate, BusinessOut
 app = FastAPI()
 
 """
@@ -26,6 +27,28 @@ but will have different HTTP-verbs.
 #     items = get_items(con)
 #     return {"items": items}
 
+@app.get("/businesses/", response_model=list[BusinessOut])
+def list_businesses():
+    """
+    GET /businesses/
+    Returns all businesses in the database.
+    """
+    con = get_connection()
+    businesses = db.get_all_businesses(con)
+    return {"businesses ": businesses}
+
+
+@app.get("/businesses/{business_id}", response_model=BusinessOut)
+def get_business(business_id: int):
+    """
+    GET /businesses/id
+    Returns one business, or 404 if not found.
+    """
+    con = get_connection()
+    business = db.get_business_by_id(con, business_id)
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    return business
 
 # INSPIRATION FOR A POST-ENDPOINT, uses a pydantic model to validate
 # @app.post("/validation_items/")
