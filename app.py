@@ -27,15 +27,15 @@ but will have different HTTP-verbs.
 #     items = get_items(con)
 #     return {"items": items}
 
-@app.get("/businesses/", response_model=list[BusinessOut])
+@app.get("/businesses", response_model=list[BusinessOut])
 def list_businesses():
     """
-    GET /businesses/
+    GET /businesses
     Returns all businesses in the database.
     """
     con = get_connection()
     businesses = db.get_all_businesses(con)
-    return {"businesses ": businesses}
+    return businesses
 
 
 @app.get("/businesses/{business_id}", response_model=BusinessOut)
