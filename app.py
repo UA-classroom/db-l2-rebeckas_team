@@ -57,5 +57,14 @@ def get_business(business_id: int):
 #     item_id = add_item_validation(con, item)
 #     return {"item_id": item_id}
 
+@app.post("/businesses/", status_code=201)
+def create_business(business: BusinessCreate):
+    """
+    POST /businesses
+    Creates a new business and returns its id.
+    """
+    con = get_connection()
+    new_id = db.create_business(con, business)
+    return {"business_id": new_id}
 
 # IMPLEMENT THE ACTUAL ENDPOINTS! Feel free to remove
