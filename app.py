@@ -4,7 +4,7 @@ from db_setup import get_connection
 from fastapi import FastAPI, HTTPException
 
 import db
-from schemas import BusinessCreate, BusinessOut
+from schemas import BusinessCreate, BusinessOut, BusinessUpdate
 app = FastAPI()
 
 """
@@ -19,14 +19,9 @@ Read more: https://www.geeksforgeeks.org/10-most-common-http-status-codes/
 but will have different HTTP-verbs.
 """
 
-
-# INSPIRATION FOR A LIST-ENDPOINT - Not necessary to use pydantic models, but we could to ascertain that we return the correct values
-# @app.get("/items/")
-# def read_items():
-#     con = get_connection()
-#     items = get_items(con)
-#     return {"items": items}
-
+#-------------------------#
+#----------GET------------#
+#-------------------------#
 @app.get("/businesses", response_model=list[BusinessOut])
 def list_businesses():
     """
@@ -50,12 +45,9 @@ def get_business(business_id: int):
         raise HTTPException(status_code=404, detail="Business not found")
     return business
 
-# INSPIRATION FOR A POST-ENDPOINT, uses a pydantic model to validate
-# @app.post("/validation_items/")
-# def create_item_validation(item: ItemCreate):
-#     con = get_connection()
-#     item_id = add_item_validation(con, item)
-#     return {"item_id": item_id}
+#-------------------------#
+#---------POST------------#
+#-------------------------#
 
 @app.post("/businesses/", status_code=201)
 def create_business(business: BusinessCreate):
@@ -67,4 +59,16 @@ def create_business(business: BusinessCreate):
     new_id = db.create_business(con, business)
     return {"business_id": new_id}
 
-# IMPLEMENT THE ACTUAL ENDPOINTS! Feel free to remove
+#-------------------------#
+#----------PUT------------#
+#-------------------------#
+@app.put("/businesses/{business_id}", response_model=BusinessOut)
+def update_business(business_id: int, data: BusinessUpdate):
+    con = get_connection()
+    updated = db.update_business(con, business_id, data)
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Business not found")
+
+    return updated
+

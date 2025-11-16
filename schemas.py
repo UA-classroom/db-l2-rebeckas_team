@@ -7,6 +7,7 @@ from typing import Optional
 from datetime import datetime
 
 
+#POST
 class BusinessCreate(BaseModel):
     """
     Used when a client creates a business (POST).
@@ -24,6 +25,7 @@ class BusinessCreate(BaseModel):
     postal_code: Optional[str] = None
 
 
+#GET
 class BusinessOut(BaseModel):
     """
     Used when we RETURN a business to the client (GET).
@@ -39,4 +41,18 @@ class BusinessOut(BaseModel):
     city: Optional[str] = None
     postal_code: Optional[str] = None
     created_at: datetime
+    
+#PUT
+class BusinessUpdate(BaseModel):
+    """
+    Used when we REPLACE a business (PUT).
+    """
+    owner_id: int
+    main_category_id: Optional[int] = None
+    name: str
+    description: Optional[str] = None
+    street_name: Optional[str] = None
+    street_number: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
 

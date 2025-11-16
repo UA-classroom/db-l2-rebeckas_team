@@ -19,14 +19,7 @@ start with a connection parameter.
 """
 
 
-### THIS IS JUST AN EXAMPLE OF A FUNCTION FOR INSPIRATION FOR A LIST-OPERATION (FETCHING MANY ENTRIES)
-# def get_items(con):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute("SELECT * FROM items;")
-#             items = cursor.fetchall()
-#     return items
-
+#GET
 def get_all_businesses(con):
     """
     Return a list of all businesses
@@ -37,13 +30,6 @@ def get_all_businesses(con):
             businesses = cursor.fetchall()
     return businesses
 
-### THIS IS JUST INSPIRATION FOR A DETAIL OPERATION (FETCHING ONE ENTRY)
-# def get_item(con, item_id):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute("""SELECT * FROM items WHERE id = %s""", (item_id,))
-#             item = cursor.fetchone()
-#             return item
 
 def get_business_by_id(con, business_id: int):
     """
@@ -56,17 +42,7 @@ def get_business_by_id(con, business_id: int):
     return business
 
 
-### THIS IS JUST INSPIRATION FOR A CREATE-OPERATION
-# def add_item(con, title, description):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute(
-#                 "INSERT INTO items (title, description) VALUES (%s, %s) RETURNING id;",
-#                 (title, description),
-#             )
-#             item_id = cursor.fetchone()["id"]
-#     return item_id
-
+#POST
 def create_business(con, data):
     """
     Insert a new business into the database and return its id.
@@ -102,3 +78,39 @@ def create_business(con, data):
             business_id = cursor.fetchone()["id"]
     return business_id
 
+#PUT
+def update_business(con, business_id: int, data):
+    """
+    Update an existing business based on business_id.
+    The updated row is returned as a dictionary
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                UPDATE businesses
+                SET owner_id = %s,
+                    main_category_id = %s,
+                    name = %s,
+                    description = %s,
+                    street_name = %s,
+                    street_number = %s,
+                    city = %s,
+                    postal_code = %s
+                WHERE id = %s
+                RETURNING *;
+                """,
+                (
+                    data.owner_id,
+                    data.main_category_id,
+                    data.name,
+                    data.description,
+                    data.street_name,
+                    data.street_number,
+                    data.city,
+                    data.postal_code,
+                    business_id,
+                ),
+            )
+            updated = cur.fetchone()
+            return updated
