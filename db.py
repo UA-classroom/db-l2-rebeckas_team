@@ -1,5 +1,6 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from typing import Optional
 
 """
 This file is responsible for making database queries, which your fastapi endpoints/routes can use.
@@ -26,6 +27,15 @@ start with a connection parameter.
 #             items = cursor.fetchall()
 #     return items
 
+def get_all_businesses(con):
+    """
+    Return a list of all businesses
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM businesses;")
+            businesses = cursor.fetchall()
+    return businesses
 
 ### THIS IS JUST INSPIRATION FOR A DETAIL OPERATION (FETCHING ONE ENTRY)
 # def get_item(con, item_id):
@@ -34,6 +44,16 @@ start with a connection parameter.
 #             cursor.execute("""SELECT * FROM items WHERE id = %s""", (item_id,))
 #             item = cursor.fetchone()
 #             return item
+
+def get_business_by_id(con, business_id: int):
+    """
+    Return ONE business by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM businesses WHERE id = %s;", (business_id,))
+            business = cursor.fetchone()
+    return business
 
 
 ### THIS IS JUST INSPIRATION FOR A CREATE-OPERATION
@@ -46,3 +66,39 @@ start with a connection parameter.
 #             )
 #             item_id = cursor.fetchone()["id"]
 #     return item_id
+
+def create_business(con, data):
+    """
+    Insert a new business into the database and return its id.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO businesses (
+                    owner_id,
+                    main_category_id,
+                    name,
+                    description,
+                    street_name,
+                    street_number,
+                    city,
+                    postal_code
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (
+                    data.owner_id,
+                    data.main_category_id,
+                    data.name,
+                    data.description,
+                    data.street_name,
+                    data.street_number,
+                    data.city,
+                    data.postal_code,
+                ),
+            )
+            business_id = cursor.fetchone()["id"]
+    return business_id
+
