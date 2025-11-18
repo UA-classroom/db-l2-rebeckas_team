@@ -123,7 +123,23 @@ def get_business_image(con, image_id: int):
             )
             return cursor.fetchone()
 
-        
+def get_opening_hours_for_business(con, business_id: int):
+    """
+    Get opening-hours for ONE business
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM business_opening_hours
+                WHERE business_id = %s
+                ORDER BY weekday;
+                """,
+                (business_id,)
+            )
+            return cursor.fetchall()
+
+
 #-------------------------#
 #---------POST------------#
 #-------------------------#
@@ -248,6 +264,27 @@ def create_business_image(con, business_image):
                 )
             )
             return cursor.fetchone()["id"]
+
+def replace_opening_hours(con, business_id: int, hours_list):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+
+            # delete old hours
+            cursor.execute(
+                "DELETE FROM business_opening_hours WHERE business_id = %s;",
+                (business_id,)
+            )
+            # insert new hours
+            for entry in hours_list:
+                cursor.execute(
+                    """
+                    INSERT INTO business_opening_hours (business_id, weekday, open_time, closing_time)
+                    VALUES (%s, %s, %s, %s);
+                    """,
+                    (business_id, entry.weekday, entry.open_time, entry.closing_time)
+                )
+
+            return True
 
 
 

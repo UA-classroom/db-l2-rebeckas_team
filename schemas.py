@@ -4,7 +4,7 @@
 
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, time
 
 #-----------------#
 #-----BUSINESS----#
@@ -188,3 +188,26 @@ class BusinessImageOut(BusinessImageBase):
     Includes the generated ID.
     """
     id: int
+
+#-----------------#
+#--OPENING HOURS--#
+#-----------------#
+
+class OpeningHoursEntry(BaseModel):
+    weekday: int   # 1–7
+    open_time: time
+    closing_time: time
+
+class OpeningHoursUpdateRequest(BaseModel):
+    """
+    Used to REPLACE all opening hours for a business.
+    The client must send a full list of weekday entries.
+    """
+    hours: list[OpeningHoursEntry]
+
+class OpeningHoursOut(BaseModel):
+    id: int
+    business_id: int
+    weekday: int
+    open_time: time
+    closing_time: time

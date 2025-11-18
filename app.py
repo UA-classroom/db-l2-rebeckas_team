@@ -9,7 +9,9 @@ from schemas import BusinessCreate, BusinessOut, BusinessUpdate
 from schemas import UserCreate, UserUpdate, UserOut
 from schemas import CategoryCreate, CategoryUpdate, CategoryOut
 from schemas import StaffMemberCreate, StaffMemberUpdate, StaffMemberOut
-from schemas import BusinessImageCreate, BusinessImageUpdate, BusinessImageOut
+from schemas import BusinessImageCreate, BusinessImageOut
+from schemas import OpeningHoursEntry, OpeningHoursUpdateRequest, OpeningHoursOut
+
 
 
 app = FastAPI()
@@ -128,6 +130,10 @@ def get_business_image(image_id: int):
         raise HTTPException(status_code=404, detail="Image not found")
     return img
 
+@app.get("/businesses/{business_id}/opening-hours", response_model=list[OpeningHoursOut])
+def get_opening_hours_for_business_route(business_id: int):
+    con = get_connection()
+    return db.get_opening_hours_for_business(con, business_id)
 
 #-------------------------#
 #---------POST------------#
@@ -170,6 +176,12 @@ def create_business_image_route(data: BusinessImageCreate):
     con = get_connection()
     new_id = db.create_business_image(con, data)
     return {"id": new_id}
+
+@app.put("/businesses/{business_id}/opening-hours")
+def update_opening_hours_for_business(business_id: int, opening_hours: OpeningHoursUpdateRequest):
+    con = get_connection()
+    db.replace_opening_hours(con, business_id, opening_hours.hours)
+    return {"message": "Opening hours updated successfully"}
 
 
 #-------------------------#
