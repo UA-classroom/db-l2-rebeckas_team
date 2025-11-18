@@ -4,9 +4,12 @@ from db_setup import get_connection
 from fastapi import FastAPI, HTTPException
 
 import db
+
 from schemas import BusinessCreate, BusinessOut, BusinessUpdate
 from schemas import UserCreate, UserUpdate, UserOut
 from schemas import CategoryCreate, CategoryUpdate, CategoryOut
+from schemas import StaffMemberCreate, StaffMemberUpdate, StaffMemberOut
+
 app = FastAPI()
 
 """
@@ -82,6 +85,30 @@ def get_category(category_id: int):
         raise HTTPException(status_code=404, detail="Category not found")
     return category
 
+@app.get("/staffmembers", response_model=list[StaffMemberOut])
+def list_staffmembers():
+    con = get_connection()
+    staff = db.get_all_staffmembers(con)
+    return staff
+
+@app.get("/staffmembers/{staff_id}", response_model=StaffMemberOut)
+def get_staffmember(staff_id: int):
+    con = get_connection()
+    staff = db.get_staffmember_by_id(con, staff_id)
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+    return staff
+
+@app.get("/businesses/{business_id}/staffmembers", response_model=list[StaffMemberOut])
+def list_staff_for_business(business_id: int):
+    """
+    Returns all staff members belonging to a specific business.
+    """
+    con = get_connection()
+    staff = db.get_staffmembers_by_business(con, business_id)
+    return staff
+
+
 #-------------------------#
 #---------POST------------#
 #-------------------------#
@@ -111,6 +138,13 @@ def create_category(data: CategoryCreate):
     con = get_connection()
     new_id = db.create_category(con, data)
     return {"id": new_id}
+
+@app.post("/staffmembers", status_code=201)
+def create_staffmember_route(data: StaffMemberCreate):
+    con = get_connection()
+    new_id = db.create_staffmember(con, data)
+    return {"id": new_id}
+
 
 
 #-------------------------#
@@ -154,6 +188,17 @@ def update_category(category_id: int, data: CategoryUpdate):
 
     return updated
 
+@app.put("/staffmembers/{staff_id}", response_model=StaffMemberOut)
+def update_staffmember_route(staff_id: int, data: StaffMemberUpdate):
+    con = get_connection()
+    updated = db.update_staffmember(con, staff_id, data)
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+
+    return updated
+
+
 
 #-------------------------#
 #---------DELETE----------#
@@ -195,3 +240,14 @@ def delete_category(category_id: int):
         raise HTTPException(status_code=404, detail="Category not found")
 
     return None
+
+@app.delete("/staffmembers/{staff_id}", status_code=204)
+def delete_staffmember_route(staff_id: int):
+    con = get_connection()
+    deleted = db.delete_staffmember(con, staff_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+
+    return None
+
