@@ -43,6 +43,24 @@ def get_business_by_id(con, business_id: int):
             business = cursor.fetchone()
     return business
 
+def get_all_users(con):
+    """
+    Return a list of all users
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM users;")
+            return cursor.fetchall()
+
+def get_user_by_id(con, user_id: int):
+    """
+    Return ONE user by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM users WHERE id = %s;", (user_id,))
+            return cursor.fetchone()
+
 
 #-------------------------#
 #---------POST------------#
@@ -81,6 +99,33 @@ def create_business(con, data):
             )
             business_id = cursor.fetchone()["id"]
     return business_id
+
+def create_user(con, data):
+    """
+    Insert a new user into the database and return its id.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO users (
+                    role, firstname, lastname, username, email, phone_number
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (
+                    data.role,
+                    data.firstname,
+                    data.lastname,
+                    data.username,
+                    data.email,
+                    data.phone_number
+                )
+            )
+            return cursor.fetchone()["id"]
+
+
 
 #-------------------------#
 #----------PUT------------#
@@ -121,6 +166,36 @@ def update_business(con, business_id: int, data):
             updated = cursor.fetchone()
             return updated
 
+def update_user(con, user_id: int, data):
+    """
+    Update an existing user based on user_id.
+    The updated user is returned as a dictionary
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE users
+                SET role = %s,
+                    firstname = %s,
+                    lastname = %s,
+                    username = %s,
+                    email = %s,
+                    phone_number = %s
+                WHERE id = %s
+                RETURNING *;
+                """,
+                (
+                    data.role,
+                    data.firstname,
+                    data.lastname,
+                    data.username,
+                    data.email,
+                    data.phone_number,
+                    user_id,
+                )
+            )
+            return cursor.fetchone()
 #-------------------------#
 #---------DELETE----------#
 #-------------------------#
@@ -137,3 +212,16 @@ def delete_business(con, business_id: int):
             )
             deleted = cursor.fetchone()
             return deleted
+        
+def delete_user(con, user_id: int):
+    """
+    Deletes an existing user based on user_id.
+    Returns the deleted user_id if the deletion was successful.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM users WHERE id = %s RETURNING id;",
+                (user_id,)
+            )
+            return cursor.fetchone()

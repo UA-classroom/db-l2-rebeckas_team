@@ -4,7 +4,7 @@ from db_setup import get_connection
 from fastapi import FastAPI, HTTPException
 
 import db
-from schemas import BusinessCreate, BusinessOut, BusinessUpdate
+from schemas import BusinessCreate, BusinessOut, BusinessUpdate, UserCreate, UserUpdate, UserOut
 app = FastAPI()
 
 """
@@ -25,7 +25,7 @@ but will have different HTTP-verbs.
 @app.get("/businesses/", response_model=list[BusinessOut])
 def list_businesses():
     """
-    GET /businesses
+    GET /businesses/
     Returns all businesses in the database.
     """
     con = get_connection()
@@ -45,6 +45,28 @@ def get_business(business_id: int):
         raise HTTPException(status_code=404, detail="Business not found")
     return business
 
+@app.get("/users/", response_model=list[UserOut])
+def list_users():
+    """
+    GET /users/
+    Returns all users in the database.
+    """
+    con = get_connection()
+    users = db.get_all_users(con)
+    return users
+
+@app.get("/users/{user_id}", response_model=UserOut)
+def get_user(user_id: int):
+    """
+    GET /users/id
+    Returns one user, or 404 if not found.
+    """
+    con = get_connection()
+    user = db.get_user_by_id(con, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 #-------------------------#
 #---------POST------------#
 #-------------------------#
@@ -58,6 +80,16 @@ def create_business(business: BusinessCreate):
     con = get_connection()
     new_id = db.create_business(con, business)
     return {"business_id": new_id}
+
+@app.post("/users/", status_code=201)
+def create_user(data: UserCreate):
+    """
+    POST /users/
+    Creates a new user and returns its id.
+    """
+    con = get_connection()
+    new_id = db.create_user(con, data)
+    return {"id": new_id}
 
 #-------------------------#
 #----------PUT------------#
@@ -74,6 +106,20 @@ def update_business(business_id: int, data: BusinessUpdate):
     if not updated:
         raise HTTPException(status_code=404, detail="Business not found")
 
+    return updated
+
+@app.put("/users/{user_id}", response_model=UserOut)
+def update_user(user_id: int, data: UserUpdate):
+    """
+    PUT /users/{user_id}
+    Updates an existing user and returns the updated record.
+    """
+    con = get_connection()
+    updated = db.update_user(con, user_id, data)
+    
+    if not updated:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     return updated
 
 #-------------------------#
@@ -93,3 +139,16 @@ def delete_business(business_id: int):
 
     return None
 
+@app.delete("/users/{user_id}", status_code=204)
+def delete_user(user_id: int):
+    """
+    DELETE /users/{user_id}
+    Deletes an existing user.
+    """
+    con = get_connection()
+    deleted = db.delete_user(con, user_id)
+    
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return None

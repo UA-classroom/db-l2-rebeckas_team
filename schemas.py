@@ -54,3 +54,34 @@ class BusinessOut(BusinessBase):
 #-------USERS-----#
 #-----------------#
 
+class UserBase(BaseModel):
+    """
+    Shared fields used by both creation and update operations for users.
+    """
+    role: str
+    firstname: str
+    lastname: str
+    username: str
+    email: str
+    phone_number: Optional[str] = None
+    
+class UserCreate(UserBase):
+    """
+    Schema used when someone registers or when a provider/admin account is created.
+    All fields except phone_number are required.
+    """
+    pass
+
+class UserUpdate(UserBase):
+    """
+    Schema used for full replacement of a user (PUT).
+    """
+    pass
+
+class UserOut(UserBase):
+    """
+    Schema returned when fetching user information from the API.
+    Includes database-generated fields such as id and created_at.
+    """
+    id: int
+    created_at: datetime
