@@ -4,7 +4,9 @@ from db_setup import get_connection
 from fastapi import FastAPI, HTTPException
 
 import db
-from schemas import BusinessCreate, BusinessOut, BusinessUpdate, UserCreate, UserUpdate, UserOut
+from schemas import BusinessCreate, BusinessOut, BusinessUpdate
+from schemas import UserCreate, UserUpdate, UserOut
+from schemas import CategoryCreate, CategoryUpdate, CategoryOut
 app = FastAPI()
 
 """
@@ -67,6 +69,19 @@ def get_user(user_id: int):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+@app.get("/categories", response_model=list[CategoryOut])
+def list_categories():
+    con = get_connection()
+    return db.get_all_categories(con)
+
+@app.get("/categories/{category_id}", response_model=CategoryOut)
+def get_category(category_id: int):
+    con = get_connection()
+    category = db.get_category_by_id(con, category_id)
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return category
+
 #-------------------------#
 #---------POST------------#
 #-------------------------#
@@ -82,14 +97,21 @@ def create_business(business: BusinessCreate):
     return {"business_id": new_id}
 
 @app.post("/users/", status_code=201)
-def create_user(data: UserCreate):
+def create_user(user: UserCreate):
     """
     POST /users/
     Creates a new user and returns its id.
     """
     con = get_connection()
-    new_id = db.create_user(con, data)
+    new_id = db.create_user(con, user)
     return {"id": new_id}
+
+@app.post("/categories", status_code=201)
+def create_category(data: CategoryCreate):
+    con = get_connection()
+    new_id = db.create_category(con, data)
+    return {"id": new_id}
+
 
 #-------------------------#
 #----------PUT------------#
@@ -122,6 +144,17 @@ def update_user(user_id: int, data: UserUpdate):
     
     return updated
 
+@app.put("/categories/{category_id}", response_model=CategoryOut)
+def update_category(category_id: int, data: CategoryUpdate):
+    con = get_connection()
+    updated = db.update_category(con, category_id, data)
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    return updated
+
+
 #-------------------------#
 #---------DELETE----------#
 #-------------------------#
@@ -151,4 +184,14 @@ def delete_user(user_id: int):
     if not deleted:
         raise HTTPException(status_code=404, detail="User not found")
     
+    return None
+
+@app.delete("/categories/{category_id}", status_code=204)
+def delete_category(category_id: int):
+    con = get_connection()
+    deleted = db.delete_category(con, category_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Category not found")
+
     return None

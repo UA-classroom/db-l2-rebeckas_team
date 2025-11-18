@@ -85,3 +85,36 @@ class UserOut(UserBase):
     """
     id: int
     created_at: datetime
+    
+#-----------------#
+#----CATEGORIES---#
+#-----------------#
+
+class CategoryBase(BaseModel):
+    """
+    Base attributes shared across category operations.
+    """
+    name: str
+    description: Optional[str] = None
+    parent_id: Optional[int] = None
+
+class CategoryCreate(CategoryBase):
+    """
+    Schema used when creating a new category.
+    Required: name
+    Optional: description, parent_id
+    """
+    pass
+
+class CategoryUpdate(CategoryBase):
+    """
+    Full replacement of a category (PUT).
+    """
+    pass
+
+class CategoryOut(CategoryBase):
+    """
+    Returned when fetching category data.
+    Adds database-generated fields.
+    """
+    id: int

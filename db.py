@@ -61,11 +61,23 @@ def get_user_by_id(con, user_id: int):
             cursor.execute("SELECT * FROM users WHERE id = %s;", (user_id,))
             return cursor.fetchone()
 
+def get_all_categories(con):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM categories;")
+            return cursor.fetchall()
+
+def get_category_by_id(con, category_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM categories WHERE id = %s;", (category_id,))
+            return cursor.fetchone()
+
 
 #-------------------------#
 #---------POST------------#
 #-------------------------#
-def create_business(con, data):
+def create_business(con, business):
     """
     Insert a new business into the database and return its id.
     """
@@ -87,20 +99,20 @@ def create_business(con, data):
                 RETURNING id;
                 """,
                 (
-                    data.owner_id,
-                    data.main_category_id,
-                    data.name,
-                    data.description,
-                    data.street_name,
-                    data.street_number,
-                    data.city,
-                    data.postal_code,
+                    business.owner_id,
+                    business.main_category_id,
+                    business.name,
+                    business.description,
+                    business.street_name,
+                    business.street_number,
+                    business.city,
+                    business.postal_code,
                 ),
             )
             business_id = cursor.fetchone()["id"]
     return business_id
 
-def create_user(con, data):
+def create_user(con, user):
     """
     Insert a new user into the database and return its id.
     """
@@ -115,22 +127,40 @@ def create_user(con, data):
                 RETURNING id;
                 """,
                 (
-                    data.role,
-                    data.firstname,
-                    data.lastname,
-                    data.username,
-                    data.email,
-                    data.phone_number
+                    user.role,
+                    user.firstname,
+                    user.lastname,
+                    user.username,
+                    user.email,
+                    user.phone_number
+                )
+            )
+            return cursor.fetchone()["id"]
+
+def create_category(con, category):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO categories (name, description, parent_id)
+                VALUES (%s, %s, %s)
+                RETURNING id;
+                """,
+                (
+                    category.name, 
+                    category.description, 
+                    category.parent_id
                 )
             )
             return cursor.fetchone()["id"]
 
 
 
+
 #-------------------------#
 #----------PUT------------#
 #-------------------------#
-def update_business(con, business_id: int, data):
+def update_business(con, business_id: int, business):
     """
     Update an existing business based on business_id.
     The updated business is returned as a dictionary
@@ -152,21 +182,21 @@ def update_business(con, business_id: int, data):
                 RETURNING *;
                 """,
                 (
-                    data.owner_id,
-                    data.main_category_id,
-                    data.name,
-                    data.description,
-                    data.street_name,
-                    data.street_number,
-                    data.city,
-                    data.postal_code,
+                    business.owner_id,
+                    business.main_category_id,
+                    business.name,
+                    business.description,
+                    business.street_name,
+                    business.street_number,
+                    business.city,
+                    business.postal_code,
                     business_id,
                 ),
             )
             updated = cursor.fetchone()
             return updated
 
-def update_user(con, user_id: int, data):
+def update_user(con, user_id: int, user):
     """
     Update an existing user based on user_id.
     The updated user is returned as a dictionary
@@ -186,16 +216,39 @@ def update_user(con, user_id: int, data):
                 RETURNING *;
                 """,
                 (
-                    data.role,
-                    data.firstname,
-                    data.lastname,
-                    data.username,
-                    data.email,
-                    data.phone_number,
+                    user.role,
+                    user.firstname,
+                    user.lastname,
+                    user.username,
+                    user.email,
+                    user.phone_number,
                     user_id,
                 )
             )
             return cursor.fetchone()
+
+def update_category(con, category_id: int, category):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE categories
+                SET name = %s,
+                    description = %s,
+                    parent_id = %s
+                WHERE id = %s
+                RETURNING *;
+                """,
+                (
+                    category.name, 
+                    category.description, 
+                    category.parent_id, 
+                    category_id
+                )
+            )
+            return cursor.fetchone()
+
+
 #-------------------------#
 #---------DELETE----------#
 #-------------------------#
@@ -223,5 +276,14 @@ def delete_user(con, user_id: int):
             cursor.execute(
                 "DELETE FROM users WHERE id = %s RETURNING id;",
                 (user_id,)
+            )
+            return cursor.fetchone()
+
+def delete_category(con, category_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM categories WHERE id = %s RETURNING id;",
+                (category_id,)
             )
             return cursor.fetchone()
