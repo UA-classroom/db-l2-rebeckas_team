@@ -9,6 +9,8 @@ from schemas import BusinessCreate, BusinessOut, BusinessUpdate
 from schemas import UserCreate, UserUpdate, UserOut
 from schemas import CategoryCreate, CategoryUpdate, CategoryOut
 from schemas import StaffMemberCreate, StaffMemberUpdate, StaffMemberOut
+from schemas import BusinessImageCreate, BusinessImageUpdate, BusinessImageOut
+
 
 app = FastAPI()
 
@@ -108,6 +110,24 @@ def list_staff_for_business(business_id: int):
     staff = db.get_staffmembers_by_business(con, business_id)
     return staff
 
+@app.get("/business-images", response_model=list[BusinessImageOut])
+def list_all_images():
+    con = get_connection()
+    return db.get_all_business_images(con)
+
+@app.get("/businesses/{business_id}/images", response_model=list[BusinessImageOut])
+def list_images_for_business(business_id: int):
+    con = get_connection()
+    images = db.get_images_by_business(con, business_id)
+    return images
+@app.get("/business-images/{image_id}", response_model=BusinessImageOut)
+def get_business_image(image_id: int):
+    con = get_connection()
+    img = db.get_business_image(con, image_id)
+    if not img:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return img
+
 
 #-------------------------#
 #---------POST------------#
@@ -145,6 +165,11 @@ def create_staffmember_route(data: StaffMemberCreate):
     new_id = db.create_staffmember(con, data)
     return {"id": new_id}
 
+@app.post("/business-images", status_code=201)
+def create_business_image_route(data: BusinessImageCreate):
+    con = get_connection()
+    new_id = db.create_business_image(con, data)
+    return {"id": new_id}
 
 
 #-------------------------#
@@ -248,6 +273,16 @@ def delete_staffmember_route(staff_id: int):
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Staff member not found")
+
+    return None
+
+@app.delete("/business-images/{image_id}", status_code=204)
+def delete_business_image_route(image_id: int):
+    con = get_connection()
+    deleted = db.delete_business_image(con, image_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Image not found")
 
     return None
 
