@@ -13,6 +13,7 @@ from schemas import BusinessImageCreate, BusinessImageOut
 from schemas import OpeningHoursUpdateRequest, OpeningHoursOut
 from schemas import ServiceCreate, ServiceUpdate
 from schemas import BookingCreate, BookingUpdate, BookingStatusUpdate
+from schemas import PaymentCreate, PaymentOut
 
 app = FastAPI()
 
@@ -212,6 +213,23 @@ def list_bookings_for_service(service_id: int):
     con = get_connection()
     return db.get_bookings_by_service(con, service_id)
 
+@app.get("/payments", response_model=list[PaymentOut])
+def list_payments():
+    con = get_connection()
+    return db.get_all_payments(con)
+
+@app.get("/payments/{payment_id}", response_model=PaymentOut)
+def get_payment(payment_id: int):
+    con = get_connection()
+    payment = db.get_payment(con, payment_id)
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    return payment
+
+@app.get("/bookings/{booking_id}/payments", response_model=list[PaymentOut])
+def list_payments_for_booking(booking_id: int):
+    con = get_connection()
+    return db.get_payments_by_booking(con, booking_id)
 
 
 
@@ -275,6 +293,11 @@ def create_booking_endpoint(data: BookingCreate):
     booking = db.create_booking(con, data.dict())
     return booking
 
+@app.post("/payments", response_model=PaymentOut, status_code=201)
+def create_payment_route(data: PaymentCreate):
+    con = get_connection()
+    payment = db.create_payment(con, data)
+    return payment
 
 
 #-------------------------#
@@ -366,6 +389,16 @@ def update_booking_status_endpoint(booking_id: int, data: BookingStatusUpdate):
 
     return updated
 
+@app.patch("/payments/{payment_id}/status", response_model=PaymentOut)
+def update_payment_status_route(payment_id: int, data: PaymentStatusUpdate):
+    con = get_connection()
+    updated = db.update_payment_status(con, payment_id, data.status)
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    return updated
+
 #-------------------------#
 #---------DELETE----------#
 #-------------------------#
@@ -450,3 +483,11 @@ def delete_booking_endpoint(booking_id: int):
     if not deleted:
         raise HTTPException(status_code=404, detail="Booking not found")
     return {"message": "Booking deleted"}
+
+@app.delete("/payments/{payment_id}", status_code=204)
+def delete_payment_route(payment_id: int):
+    con = get_connection()
+    deleted = db.delete_payment(con, payment_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    return None

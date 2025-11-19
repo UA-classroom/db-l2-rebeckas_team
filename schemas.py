@@ -5,6 +5,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime, time
+from decimal import Decimal
 
 #-----------------#
 #-----BUSINESS----#
@@ -260,4 +261,39 @@ class BookingStatusUpdate(BaseModel):
     status: str = Field(
         ...,
         pattern="^(pending|confirmed|cancelled|completed)$"
+    )
+
+#-----------------#
+#-----PAYMENTS----#
+#-----------------#
+
+class PaymentBase(BaseModel):
+    booking_id: Optional[int] = None
+    amount: Decimal
+    payment_method: str
+    status: str = Field(
+        "pending",
+        pattern="^(pending|paid|refunded|failed)$"
+    )
+
+
+class PaymentCreate(PaymentBase):
+    """
+    Used when creating a new payment.
+    booking_id is required in practice, but made optional in case of edge cases.
+    """
+    booking_id: int
+
+
+class PaymentOut(PaymentBase):
+    """
+    Returned when reading payment data.
+    """
+    id: int
+    created_at: datetime
+
+class PaymentStatusUpdate(BaseModel):
+    status: str = Field(
+        ...,
+        pattern="^(pending|paid|refunded|failed)$"
     )

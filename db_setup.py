@@ -60,7 +60,7 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS businesses (
         id BIGSERIAL PRIMARY KEY,
-        owner_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        owner_id BIGINT NOT NULL REFERENCES users(id) ON DELETE SET NULL,
         main_category_id BIGINT REFERENCES categories(id),
         name VARCHAR(30) NOT NULL,
         description TEXT,
@@ -76,7 +76,7 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS staffmembers (
         id BIGSERIAL PRIMARY KEY,
-        business_id BIGINT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        business_id BIGINT NOT NULL REFERENCES businesses(id) ON DELETE SET NULL,
         name VARCHAR(50) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         phone_number VARCHAR(25),
@@ -135,9 +135,9 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bookings (
         id BIGSERIAL PRIMARY KEY,
-        customer_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        customer_id BIGINT NOT NULL REFERENCES users(id) ON DELETE SET NULL,
         business_id BIGINT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-        service_id BIGINT NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+        service_id BIGINT NOT NULL REFERENCES services(id) ON DELETE SET NULL,
         staff_id BIGINT REFERENCES staffmembers(id) ON DELETE SET NULL,
         starttime TIMESTAMP NOT NULL,
         endtime TIMESTAMP NOT NULL,
@@ -153,7 +153,7 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS payments (
         id BIGSERIAL PRIMARY KEY,
-        booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        booking_id BIGINT REFERENCES bookings(id) ON DELETE SET NULL,
         amount NUMERIC(10, 2) NOT NULL 
         CHECK (amount >= 0),
         payment_method VARCHAR(20) NOT NULL 
@@ -168,9 +168,9 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS reviews (
         id BIGSERIAL PRIMARY KEY,
-        booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE SET NULL,
         business_id BIGINT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-        customer_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        customer_id BIGINT NOT NULL REFERENCES users(id) ON DELETE SET NULL,
         rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
         title VARCHAR(50),
         comment TEXT,

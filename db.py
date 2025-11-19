@@ -274,6 +274,29 @@ def get_bookings_by_service(con, service_id: int):
             """, (service_id,))
             return cursor.fetchall()
 
+def get_all_payments(con):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM payments;")
+            return cursor.fetchall()
+
+def get_payment(con, payment_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT * FROM payments WHERE id = %s;",
+                (payment_id,)
+            )
+            return cursor.fetchone()
+    
+def get_payments_by_booking(con, booking_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT * FROM payments WHERE booking_id = %s;",
+                (booking_id,)
+            )
+            return cursor.fetchall()
 
 #-------------------------#
 #---------POST------------#
@@ -469,6 +492,19 @@ def create_booking(con, booking: dict):
             ))
             return cursor.fetchone()
 
+def create_payment(con, data):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO payments (booking_id, amount, payment_method, status)
+                VALUES (%s, %s, %s, %s)
+                RETURNING *;
+                """,
+                (data.booking_id, data.amount, data.payment_method, data.status)
+            )
+            return cursor.fetchone()
+
 
 
 #-------------------------#
@@ -649,6 +685,16 @@ def update_booking_status(con, booking_id: int, status: str):
             """, (status, booking_id))
             return cursor.fetchone()
 
+def update_payment_status(con, payment_id: int, status: str):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                UPDATE payments
+                SET status = %s
+                WHERE id = %s
+                RETURNING *;
+            """, (status, payment_id))
+            return cursor.fetchone()
 
 
 #-------------------------#
@@ -734,4 +780,14 @@ def delete_booking(con, booking_id: int):
                 (booking_id,)
             )
             return cursor.fetchone()
+
+def delete_payment(con, payment_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM payments WHERE id = %s RETURNING id;",
+                (payment_id,)
+            )
+            return cursor.fetchone()
+        
 
