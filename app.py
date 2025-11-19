@@ -13,7 +13,7 @@ from schemas import BusinessImageCreate, BusinessImageOut
 from schemas import OpeningHoursUpdateRequest, OpeningHoursOut
 from schemas import ServiceCreate, ServiceUpdate
 from schemas import BookingCreate, BookingUpdate, BookingStatusUpdate
-from schemas import PaymentCreate, PaymentOut
+from schemas import PaymentCreate, PaymentOut, PaymentStatusUpdate
 
 app = FastAPI()
 

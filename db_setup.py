@@ -1,5 +1,4 @@
 import os
-
 import psycopg2
 from dotenv import load_dotenv
 
@@ -24,7 +23,18 @@ def get_connection():
         port="5432",  # change if needed
     )
 
-
+def reset_database():
+    """Drops all marketplace tables and recreates them."""
+    drop_sql = """
+    DROP TABLE IF EXISTS user_reviews CASCADE;
+    DROP TABLE IF EXISTS deals CASCADE;
+    DROP TABLE IF EXISTS comments CASCADE;
+    DROP TABLE IF EXISTS listing_likes CASCADE;
+    DROP TABLE IF EXISTS listing_images CASCADE;
+    DROP TABLE IF EXISTS listings CASCADE;
+    DROP TABLE IF EXISTS categories CASCADE;
+    DROP TABLE IF EXISTS users CASCADE;
+    """
 def create_tables():
     """
     Creates all necessary tables for the BokaDirekt booking system.    
@@ -160,6 +170,8 @@ def create_tables():
         CHECK (
             payment_method IN ('card', 'gift_card', 'swish', 'klarna', 'cash')
         ),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (
+            status IN ('pending', 'paid', 'refunded', 'failed'),
         created_at TIMESTAMP DEFAULT NOW()
     );
     """)
@@ -187,5 +199,6 @@ def create_tables():
 
 if __name__ == "__main__":
     # Only reason to execute this file would be to create new tables, meaning it serves a migration file
+    reset_database()
     create_tables()
     print("Tables created successfully.")
