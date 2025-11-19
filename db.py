@@ -138,6 +138,101 @@ def get_opening_hours_for_business(con, business_id: int):
                 (business_id,)
             )
             return cursor.fetchall()
+def get_services_by_business(con, business_id: int):
+    """
+    Get ALL services for ONE business
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT * FROM services WHERE business_id = %s;
+            """, (business_id,))
+            return cursor.fetchall()
+        
+def get_service(con, service_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT * FROM services WHERE id = %s;
+            """, (service_id,))
+            return cursor.fetchone()
+        
+def get_categories_for_service(con, service_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT c.*
+                FROM categories c
+                JOIN service_categories sc ON c.id = sc.category_id
+                WHERE sc.service_id = %s;
+                """,
+                (service_id,)
+            )
+            return cur.fetchall()
+
+def get_services_for_category(con, category_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT s.*
+                FROM services s
+                JOIN service_categories sc ON s.id = sc.service_id
+                WHERE sc.category_id = %s;
+                """,
+                (category_id,)
+            )
+            return cur.fetchall()
+        
+def get_services_by_business_and_category(con, business_id: int, category_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT s.*
+                FROM services s
+                JOIN service_categories sc ON s.id = sc.service_id
+                WHERE s.business_id = %s
+                AND sc.category_id = %s;
+            """, (business_id, category_id))
+            return cursor.fetchall()
+        
+def get_categories_for_business(con, business_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT DISTINCT c.*
+                FROM categories c
+                JOIN service_categories sc ON c.id = sc.category_id
+                JOIN services s ON sc.service_id = s.id
+                WHERE s.business_id = %s;
+            """, (business_id,))
+            return cursor.fetchall()
+        
+def get_services_by_categories(con, category_ids: list[int]):
+    placeholders = ",".join(["%s"] * len(category_ids))  # e.g. %s,%s,%s
+
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(f"""
+                SELECT DISTINCT s.*
+                FROM services s
+                JOIN service_categories sc ON s.id = sc.service_id
+                WHERE sc.category_id IN ({placeholders});
+            """, category_ids)
+            return cursor.fetchall()
+
+def get_booking(con, booking_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM bookings WHERE id = %s;", (booking_id,))
+            return cursor.fetchone()
+
+def get_bookings(con):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM bookings;")
+            return cursor.fetchall()
 
 
 #-------------------------#
@@ -286,7 +381,53 @@ def replace_opening_hours(con, business_id: int, hours_list):
 
             return True
 
+def create_service(con, service: dict):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                INSERT INTO services (business_id, name, description, duration_minutes, price, is_active)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING *;
+            """, (
+                service["business_id"],
+                service["name"],
+                service.get("description"),
+                service["duration_minutes"],
+                service["price"],
+                service.get("is_active", True)
+            ))
+            return cursor.fetchone()
+        
+def add_category_to_service(con, service_id: int, category_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                INSERT INTO service_categories (service_id, category_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+                RETURNING *;
+            """, (service_id, category_id))
+            return cursor.fetchone()
 
+def create_booking(con, booking: dict):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                INSERT INTO bookings (customer_id, business_id, service_id, staff_id, 
+                                    starttime, endtime, status, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING *;
+            """, (
+                booking["customer_id"],
+                booking["business_id"],
+                booking["service_id"],
+                booking.get("staff_id"),
+                booking["starttime"],
+                booking["endtime"],
+                booking["status"],
+                booking.get("notes"),
+            ))
+            return cursor.fetchone()
 
 
 
@@ -407,6 +548,50 @@ def update_staffmember(con, staff_id: int, staff_member):
                 )
             )
             return cursor.fetchone()
+
+def update_service(con, service_id: int, service: dict):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                UPDATE services
+                SET business_id = %s, name = %s, description = %s,
+                    duration_minutes = %s, price = %s, is_active = %s
+                WHERE id = %s
+                RETURNING *;
+            """, (
+                service["business_id"],
+                service["name"],
+                service.get("description"),
+                service["duration_minutes"],
+                service["price"],
+                service.get("is_active", True),
+                service_id
+            ))
+            return cursor.fetchone()
+
+def update_booking(con, booking_id: int, booking: dict):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                UPDATE bookings
+                SET customer_id=%s, business_id=%s, service_id=%s,
+                    staff_id=%s, starttime=%s, endtime=%s, 
+                    status=%s, notes=%s
+                WHERE id=%s
+                RETURNING *;
+            """, (
+                booking["customer_id"],
+                booking["business_id"],
+                booking["service_id"],
+                booking.get("staff_id"),
+                booking["starttime"],
+                booking["endtime"],
+                booking["status"],
+                booking.get("notes"),
+                booking_id
+            ))
+            return cursor.fetchone()
+
         
 
 
@@ -467,3 +652,31 @@ def delete_business_image(con, image_id: int):
                 (image_id,)
             )
             return cursor.fetchone()
+        
+def delete_service(con, service_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                DELETE FROM services WHERE id = %s RETURNING id;
+            """, (service_id,))
+            return cursor.fetchone()
+        
+def remove_category_from_service(con, service_id: int, category_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                DELETE FROM service_categories
+                WHERE service_id = %s AND category_id = %s
+                RETURNING service_id;
+            """, (service_id, category_id))
+            return cursor.fetchone()
+        
+def delete_booking(con, booking_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM bookings WHERE id = %s RETURNING id;",
+                (booking_id,)
+            )
+            return cursor.fetchone()
+

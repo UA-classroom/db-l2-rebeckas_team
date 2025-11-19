@@ -10,9 +10,9 @@ from schemas import UserCreate, UserUpdate, UserOut
 from schemas import CategoryCreate, CategoryUpdate, CategoryOut
 from schemas import StaffMemberCreate, StaffMemberUpdate, StaffMemberOut
 from schemas import BusinessImageCreate, BusinessImageOut
-from schemas import OpeningHoursEntry, OpeningHoursUpdateRequest, OpeningHoursOut
-
-
+from schemas import OpeningHoursUpdateRequest, OpeningHoursOut
+from schemas import ServiceCreate, ServiceUpdate
+from schemas import BookingCreate, BookingUpdate
 
 app = FastAPI()
 
@@ -135,6 +135,86 @@ def get_opening_hours_for_business_route(business_id: int):
     con = get_connection()
     return db.get_opening_hours_for_business(con, business_id)
 
+@app.get("/services/search-filter")
+def filter_services_by_categories(categories: str):
+    con = get_connection()
+    category_ids = [int(c) for c in categories.split(",")]
+    services = db.get_services_by_categories(con, category_ids)
+    return services
+@app.get("/services/{service_id}")
+def get_service_endpoint(service_id: int):
+    con = get_connection()
+    service = db.get_service(con, service_id)
+
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    return service
+@app.get("/businesses/{business_id}/services")
+def list_services_for_business(business_id: int):
+    con = get_connection()
+    services = db.get_services_by_business(con, business_id)
+    return services
+
+@app.get("/categories/{category_id}/services")
+def list_services_for_category(category_id: int):
+    con = get_connection()
+    return db.get_services_for_category(con, category_id)
+
+@app.get("/services/{service_id}/categories")
+def list_categories_for_service(service_id: int):
+    con = get_connection()
+    return db.get_categories_for_service(con, service_id)
+
+@app.get("/businesses/{business_id}/categories/{category_id}/services")
+def list_services_in_category_for_business(business_id: int, category_id: int):
+    con = get_connection()
+    services = db.get_services_by_business_and_category(con, business_id, category_id)
+
+    return services
+
+@app.get("/businesses/{business_id}/categories")
+def list_categories_for_business(business_id: int):
+    con = get_connection()
+    categories = db.get_categories_for_business(con, business_id)
+    return categories
+
+@app.get("/bookings/{booking_id}")
+def get_booking_endpoint(booking_id: int):
+    con = get_connection()
+    booking = db.get_booking(con, booking_id)
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return booking
+
+@app.get("/bookings")
+def list_bookings():
+    con = get_connection()
+    return db.get_bookings(con)
+
+@app.get("/customers/{customer_id}/bookings")
+def list_bookings_for_customer(customer_id: int):
+    con = get_connection()
+    return db.get_bookings_by_customer(con, customer_id)
+
+@app.get("/businesses/{business_id}/bookings")
+def list_bookings_for_business(business_id: int):
+    con = get_connection()
+    return db.get_bookings_by_business(con, business_id)
+
+@app.get("/staff/{staff_id}/bookings")
+def list_bookings_for_staff(staff_id: int):
+    con = get_connection()
+    return db.get_bookings_by_staff(con, staff_id)
+
+@app.get("/services/{service_id}/bookings")
+def list_bookings_for_service(service_id: int):
+    con = get_connection()
+    return db.get_bookings_by_service(con, service_id)
+
+
+
+
 #-------------------------#
 #---------POST------------#
 #-------------------------#
@@ -177,11 +257,24 @@ def create_business_image_route(data: BusinessImageCreate):
     new_id = db.create_business_image(con, data)
     return {"id": new_id}
 
-@app.put("/businesses/{business_id}/opening-hours")
-def update_opening_hours_for_business(business_id: int, opening_hours: OpeningHoursUpdateRequest):
+@app.post("/services/", response_model=dict)
+def create_service_endpoint(service: ServiceCreate):
     con = get_connection()
-    db.replace_opening_hours(con, business_id, opening_hours.hours)
-    return {"message": "Opening hours updated successfully"}
+    new_service = db.create_service(con, service.dict())
+    return new_service
+
+@app.post("/services/{service_id}/categories/{category_id}")
+def add_category(service_id: int, category_id: int):
+    con = get_connection()
+    res = db.add_category_to_service(con, service_id, category_id)
+    return {"status": "added" if res else "already exists"}
+
+@app.post("/bookings/")
+def create_booking_endpoint(data: BookingCreate):
+    con = get_connection()
+    booking = db.create_booking(con, data.dict())
+    return booking
+
 
 
 #-------------------------#
@@ -235,7 +328,29 @@ def update_staffmember_route(staff_id: int, data: StaffMemberUpdate):
 
     return updated
 
+@app.put("/businesses/{business_id}/opening-hours")
+def update_opening_hours_for_business(business_id: int, opening_hours: OpeningHoursUpdateRequest):
+    con = get_connection()
+    db.replace_opening_hours(con, business_id, opening_hours.hours)
+    return {"message": "Opening hours updated successfully"}
 
+@app.put("/services/{service_id}")
+def update_service_endpoint(service_id: int, updated: ServiceUpdate):
+    con = get_connection()
+    updated_service = db.update_service(con, service_id, updated.dict())
+    
+    if not updated_service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    return updated_service
+
+@app.put("/bookings/{booking_id}")
+def update_booking_endpoint(booking_id: int, data: BookingUpdate):
+    con = get_connection()
+    updated = db.update_booking(con, booking_id, data.dict())
+    if not updated:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return updated
 
 #-------------------------#
 #---------DELETE----------#
@@ -298,3 +413,26 @@ def delete_business_image_route(image_id: int):
 
     return None
 
+@app.delete("/services/{service_id}")
+def delete_service_endpoint(service_id: int):
+    con = get_connection()
+    result = db.delete_service(con, service_id)
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    return {"message": "Service deleted"}
+
+@app.delete("/services/{service_id}/categories/{category_id}")
+def remove_category(service_id: int, category_id: int):
+    con = get_connection()
+    res = db.remove_category_from_service(con, service_id, category_id)
+    return {"status": "removed" if res else "not found"}
+
+@app.delete("/bookings/{booking_id}")
+def delete_booking_endpoint(booking_id: int):
+    con = get_connection()
+    deleted = db.delete_booking(con, booking_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return {"message": "Booking deleted"}

@@ -211,3 +211,46 @@ class OpeningHoursOut(BaseModel):
     weekday: int
     open_time: time
     closing_time: time
+
+#-----------------#
+#-----SERVICES----#
+#-----------------#
+
+class ServiceBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    duration_minutes: int
+    price: float
+    is_active: Optional[bool] = True
+
+
+class ServiceCreate(ServiceBase):
+    """Schema used when creating a service (POST)."""
+    business_id: int
+
+
+class ServiceUpdate(ServiceBase):
+    """Schema used when fully updating (PUT) a service."""
+    business_id: int
+    
+#-----------------#
+#-----BOOKINGS----#
+#-----------------#
+
+class BookingBase(BaseModel):
+    customer_id: int
+    business_id: int
+    service_id: int
+    staff_id: Optional[int] = None
+    starttime: datetime
+    endtime: datetime
+    status: str = "pending"
+    notes: Optional[str] = None
+
+class BookingCreate(BookingBase):
+    """Used when creating a new booking."""
+    pass
+
+class BookingUpdate(BookingBase):
+    """Used when fully updating a booking."""
+    pass
