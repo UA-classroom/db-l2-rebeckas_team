@@ -2,7 +2,7 @@
 # Pydantic schemas are used to validate data that you receive, or to make sure that whatever data
 # you send back to the client follows a certain structure
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime, time
 
@@ -254,3 +254,10 @@ class BookingCreate(BookingBase):
 class BookingUpdate(BookingBase):
     """Used when fully updating a booking."""
     pass
+
+class BookingStatusUpdate(BaseModel):
+    status: str  # must be one of your allowed values
+    status: str = Field(
+        ...,
+        pattern="^(pending|confirmed|cancelled|completed)$"
+    )

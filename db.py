@@ -234,6 +234,46 @@ def get_bookings(con):
             cursor.execute("SELECT * FROM bookings;")
             return cursor.fetchall()
 
+def get_bookings_by_customer(con, customer_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT * FROM bookings
+                WHERE customer_id = %s
+                ORDER BY starttime;
+            """, (customer_id,))
+            return cursor.fetchall()
+        
+def get_bookings_by_business(con, business_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT * FROM bookings
+                WHERE business_id = %s
+                ORDER BY starttime;
+            """, (business_id,))
+            return cursor.fetchall()
+
+def get_bookings_by_staff(con, staff_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT * FROM bookings
+                WHERE staff_id = %s
+                ORDER BY starttime;
+            """, (staff_id,))
+            return cursor.fetchall()
+
+def get_bookings_by_service(con, service_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT * FROM bookings
+                WHERE service_id = %s
+                ORDER BY starttime;
+            """, (service_id,))
+            return cursor.fetchall()
+
 
 #-------------------------#
 #---------POST------------#
@@ -593,6 +633,21 @@ def update_booking(con, booking_id: int, booking: dict):
             return cursor.fetchone()
 
         
+
+#-------------------------#
+#----------PATCH----------#
+#-------------------------#
+
+def update_booking_status(con, booking_id: int, status: str):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                UPDATE bookings
+                SET status = %s
+                WHERE id = %s
+                RETURNING *;
+            """, (status, booking_id))
+            return cursor.fetchone()
 
 
 

@@ -12,7 +12,7 @@ from schemas import StaffMemberCreate, StaffMemberUpdate, StaffMemberOut
 from schemas import BusinessImageCreate, BusinessImageOut
 from schemas import OpeningHoursUpdateRequest, OpeningHoursOut
 from schemas import ServiceCreate, ServiceUpdate
-from schemas import BookingCreate, BookingUpdate
+from schemas import BookingCreate, BookingUpdate, BookingStatusUpdate
 
 app = FastAPI()
 
@@ -350,6 +350,20 @@ def update_booking_endpoint(booking_id: int, data: BookingUpdate):
     updated = db.update_booking(con, booking_id, data.dict())
     if not updated:
         raise HTTPException(status_code=404, detail="Booking not found")
+    return updated
+
+#-------------------------#
+#----------PATCH----------#
+#-------------------------#
+@app.patch("/bookings/{booking_id}/status")
+def update_booking_status_endpoint(booking_id: int, data: BookingStatusUpdate):
+    con = get_connection()
+
+    updated = db.update_booking_status(con, booking_id, data.status)
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
     return updated
 
 #-------------------------#
