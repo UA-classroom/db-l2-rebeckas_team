@@ -298,6 +298,44 @@ def get_payments_by_booking(con, booking_id: int):
             )
             return cursor.fetchall()
 
+def get_total_revenue_for_business(con, business_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT COALESCE(SUM(p.amount), 0) AS total_revenue
+                FROM payments p
+                JOIN bookings b ON p.booking_id = b.id
+                WHERE b.business_id = %s
+                AND p.status = 'paid';
+            """, (business_id,))
+            return cursor.fetchone()
+
+def get_unpaid_bookings(con):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT b.*
+                FROM bookings b
+                LEFT JOIN payments p ON p.booking_id = b.id
+                    AND p.status = 'paid'
+                WHERE p.id IS NULL;
+            """)
+            return cursor.fetchall()
+
+def get_unpaid_bookings_for_business(con, business_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT b.*
+                FROM bookings b
+                LEFT JOIN payments p 
+                    ON p.booking_id = b.id
+                    AND p.status = 'paid'
+                WHERE b.business_id = %s
+                AND p.id IS NULL;
+            """, (business_id,))
+            return cursor.fetchall()
+
 #-------------------------#
 #---------POST------------#
 #-------------------------#

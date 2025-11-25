@@ -401,18 +401,90 @@ def seed_data():
                 }
             )
 
-    # PAYMENTS: for confirmed + completed bookings, about half
+        import random
+
+    # Realistic weight-based payment method selection
+    payment_method_weights = {
+        "card": 0.55,
+            "swish": 0.25,
+        "klarna": 0.10,
+        "gift_card": 0.05,
+        "cash": 0.05,
+    }
+
+    def choose_weighted_method():
+        r = random.random()
+        cumulative = 0
+        for method, weight in payment_method_weights.items():
+            cumulative += weight
+            if r <= cumulative:
+                return method
+        return "card"  # fallback
+
+
+    # ---- PAYMENTS ----
     for i, b in enumerate(booking_infos):
-        if b["status"] in ("confirmed", "completed") and i % 2 == 0:
-            amount = service_price_by_id[b["service_id"]]
-            method = payment_methods[i % len(payment_methods)]
+
+        status = b["status"]
+        service_id = b["service_id"]
+        booking_id = b["id"]
+        amount = service_price_by_id[service_id]
+
+        # --- Pending bookings: No payment yet ---
+        if status == "pending":
+            continue
+
+        # --- Cancelled bookings ---
+        if status == "cancelled":
+            # 50% get a refund, 50% no payment created
+            if random.random() < 0.5:
+                cursor.execute(
+                    """
+                    INSERT INTO payments (booking_id, amount, payment_method, status)
+                    VALUES (%s, %s, %s, %s);
+                    """,
+                    (booking_id, amount, choose_weighted_method(), "refunded"),
+                )
+            continue
+
+        # --- Confirmed bookings ---
+        if status == "confirmed":
+            r = random.random()
+            if r < 0.5:
+                payment_status = "pending"
+            elif r < 0.9:
+                payment_status = "paid"
+            else:
+                payment_status = "failed"
+
             cursor.execute(
                 """
-                INSERT INTO payments (booking_id, amount, payment_method)
-                VALUES (%s, %s, %s);
+                INSERT INTO payments (booking_id, amount, payment_method, status)
+                VALUES (%s, %s, %s, %s);
                 """,
-                (b["id"], amount, method),
+                (booking_id, amount, choose_weighted_method(), payment_status),
             )
+            continue
+
+        # --- Completed bookings ---
+        if status == "completed":
+            r = random.random()
+            if r < 0.80:
+                payment_status = "paid"
+            elif r < 0.90:
+                payment_status = "pending"
+            else:
+                payment_status = "refunded"
+
+            cursor.execute(
+                """
+                INSERT INTO payments (booking_id, amount, payment_method, status)
+                VALUES (%s, %s, %s, %s);
+                """,
+                (booking_id, amount, choose_weighted_method(), payment_status),
+            )
+            continue
+
 
     # REVIEWS: for some completed bookings
     review_texts = [

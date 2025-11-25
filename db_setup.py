@@ -25,16 +25,28 @@ def get_connection():
 
 def reset_database():
     """Drops all marketplace tables and recreates them."""
+    
+    connection = get_connection()
+    cursor = connection.cursor()
+    
     drop_sql = """
-    DROP TABLE IF EXISTS user_reviews CASCADE;
-    DROP TABLE IF EXISTS deals CASCADE;
-    DROP TABLE IF EXISTS comments CASCADE;
-    DROP TABLE IF EXISTS listing_likes CASCADE;
-    DROP TABLE IF EXISTS listing_images CASCADE;
-    DROP TABLE IF EXISTS listings CASCADE;
+    DROP TABLE IF EXISTS reviews CASCADE;
+    DROP TABLE IF EXISTS payments CASCADE;
+    DROP TABLE IF EXISTS bookings CASCADE;
+    DROP TABLE IF EXISTS service_categories CASCADE;
+    DROP TABLE IF EXISTS services CASCADE;
+    DROP TABLE IF EXISTS business_opening_hours CASCADE;
+    DROP TABLE IF EXISTS business_images CASCADE;
+    DROP TABLE IF EXISTS staffmembers CASCADE;
+    DROP TABLE IF EXISTS businesses CASCADE;
     DROP TABLE IF EXISTS categories CASCADE;
     DROP TABLE IF EXISTS users CASCADE;
     """
+    cursor.execute(drop_sql)
+    connection.commit()
+    cursor.close()
+    connection.close()
+    print("🧨 All tables dropped successfully.")
 def create_tables():
     """
     Creates all necessary tables for the BokaDirekt booking system.    
@@ -165,15 +177,17 @@ def create_tables():
         id BIGSERIAL PRIMARY KEY,
         booking_id BIGINT REFERENCES bookings(id) ON DELETE SET NULL,
         amount NUMERIC(10, 2) NOT NULL 
-        CHECK (amount >= 0),
+            CHECK (amount >= 0),
         payment_method VARCHAR(20) NOT NULL 
-        CHECK (
-            payment_method IN ('card', 'gift_card', 'swish', 'klarna', 'cash')
-        ),
-        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (
-            status IN ('pending', 'paid', 'refunded', 'failed'),
+            CHECK (
+                payment_method IN ('card', 'gift_card', 'swish', 'klarna', 'cash')
+            ),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' 
+            CHECK (
+                status IN ('pending', 'paid', 'refunded', 'failed')
+            ),
         created_at TIMESTAMP DEFAULT NOW()
-    );
+        );
     """)
     
     # REVIEWS

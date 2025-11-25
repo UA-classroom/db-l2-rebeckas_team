@@ -231,6 +231,21 @@ def list_payments_for_booking(booking_id: int):
     con = get_connection()
     return db.get_payments_by_booking(con, booking_id)
 
+@app.get("/businesses/{business_id}/revenue")
+def get_business_revenue(business_id: int):
+    con = get_connection()
+    result = db.get_total_revenue_for_business(con, business_id)
+    return result
+
+@app.get("/bookings/unpaid")
+def list_unpaid_bookings():
+    con = get_connection()
+    return db.get_unpaid_bookings(con)
+
+@app.get("/businesses/{business_id}/bookings/unpaid")
+def list_unpaid_bookings_for_business(business_id: int):
+    con = get_connection()
+    return db.get_unpaid_bookings_for_business(con, business_id)
 
 
 #-------------------------#

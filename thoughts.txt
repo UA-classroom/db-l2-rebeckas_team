@@ -1,0 +1,5 @@
+Staffmembers should have multiple services but services could also have many staffmembers. 
+SO CHANGE THAT TO MANY TO MANY. 
+
+Booking only has one staffmember but staffmember can have many bookings
+This is correct atm. 
