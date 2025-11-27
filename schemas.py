@@ -2,10 +2,12 @@
 # Pydantic schemas are used to validate data that you receive, or to make sure that whatever data
 # you send back to the client follows a certain structure
 
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime, time
 from decimal import Decimal
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
 
 #-----------------#
 #-----BUSINESS----#
@@ -321,3 +323,8 @@ class ReviewUpdate(ReviewBase):
 class ReviewOut(ReviewBase):
     id: int
     created_at: datetime
+
+class ReviewDetail(ReviewOut):
+    service_name: str
+    business_name: str
+    customer_name: str
