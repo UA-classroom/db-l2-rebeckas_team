@@ -297,3 +297,27 @@ class PaymentStatusUpdate(BaseModel):
         ...,
         pattern="^(pending|paid|refunded|failed)$"
     )
+
+#-----------------#
+#-----REVIEWS-----#
+#-----------------#
+
+class ReviewBase(BaseModel):
+    booking_id: int
+    business_id: int
+    customer_id: int
+    rating: int = Field(..., ge=1, le=5)
+    title: Optional[str] = None
+    comment: Optional[str] = None
+
+class ReviewCreate(ReviewBase):
+    """Used when creating a new review."""
+    pass
+
+class ReviewUpdate(ReviewBase):
+    """Used when fully updating a review."""
+    pass
+
+class ReviewOut(ReviewBase):
+    id: int
+    created_at: datetime

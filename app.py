@@ -14,6 +14,8 @@ from schemas import OpeningHoursUpdateRequest, OpeningHoursOut
 from schemas import ServiceCreate, ServiceUpdate
 from schemas import BookingCreate, BookingUpdate, BookingStatusUpdate
 from schemas import PaymentCreate, PaymentOut, PaymentStatusUpdate
+from schemas import ReviewCreate, ReviewUpdate, ReviewOut
+
 
 app = FastAPI()
 
@@ -247,6 +249,44 @@ def list_unpaid_bookings_for_business(business_id: int):
     con = get_connection()
     return db.get_unpaid_bookings_for_business(con, business_id)
 
+@app.get("/reviews/{review_id}", response_model=ReviewOut)
+def get_review_endpoint(review_id: int):
+    con = get_connection()
+    review = db.get_review(con, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return review
+
+@app.get("/reviews", response_model=list[ReviewOut])
+def list_reviews():
+    con = get_connection()
+    return db.get_all_reviews(con)
+
+@app.get("/businesses/{business_id}/reviews", response_model=list[ReviewOut])
+def list_reviews_for_business(business_id: int):
+    con = get_connection()
+    return db.get_reviews_by_business(con, business_id)
+
+@app.get("/customers/{customer_id}/reviews", response_model=list[ReviewOut])
+def list_reviews_for_customer(customer_id: int):
+    con = get_connection()
+    return db.get_reviews_by_customer(con, customer_id)
+
+@app.get("/businesses/{business_id}/rating")
+def get_business_rating(business_id: int):
+    con = get_connection()
+    result = db.get_average_rating_for_business(con, business_id)
+    return result
+
+@app.get("/businesses/top-rated")
+def top_rated_businesses(limit: int = 10):
+    con = get_connection()
+    return db.get_top_rated_businesses(con, limit)
+
+@app.get("/businesses/{business_id}/bookings/count")
+def total_bookings_for_business(business_id: int):
+    con = get_connection()
+    return db.get_total_bookings_for_business(con, business_id)
 
 #-------------------------#
 #---------POST------------#
@@ -313,6 +353,12 @@ def create_payment_route(data: PaymentCreate):
     con = get_connection()
     payment = db.create_payment(con, data)
     return payment
+
+@app.post("/reviews", response_model=ReviewOut)
+def create_review_endpoint(data: ReviewCreate):
+    con = get_connection()
+    review = db.create_review(con, data)
+    return review
 
 
 #-------------------------#
@@ -388,6 +434,14 @@ def update_booking_endpoint(booking_id: int, data: BookingUpdate):
     updated = db.update_booking(con, booking_id, data.dict())
     if not updated:
         raise HTTPException(status_code=404, detail="Booking not found")
+    return updated
+
+@app.put("/reviews/{review_id}", response_model=ReviewOut)
+def update_review_endpoint(review_id: int, data: ReviewUpdate):
+    con = get_connection()
+    updated = db.update_review(con, review_id, data)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Review not found")
     return updated
 
 #-------------------------#
@@ -505,4 +559,12 @@ def delete_payment_route(payment_id: int):
     deleted = db.delete_payment(con, payment_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Payment not found")
+    return None
+
+@app.delete("/reviews/{review_id}", status_code=204)
+def delete_review_endpoint(review_id: int):
+    con = get_connection()
+    deleted = db.delete_review(con, review_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Review not found")
     return None
