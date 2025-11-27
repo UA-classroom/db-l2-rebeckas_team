@@ -3,3 +3,8 @@ SO CHANGE THAT TO MANY TO MANY.
 
 Booking only has one staffmember but staffmember can have many bookings
 This is correct atm. 
+
+
+Endpoints som inte fungerar: 
+/bookings/unpaid - ta bort, ej relevant eftersom vi redan har unpaid per företag
+/buissnesses/toprated - need to move this further up in the get to avoid clashing

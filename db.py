@@ -484,6 +484,54 @@ def get_total_bookings_for_business(con, business_id: int):
                 WHERE business_id = %s;
             """, (business_id,))
             return cursor.fetchone()
+def get_services_for_staff(con, staff_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT s.*
+                FROM services s
+                JOIN staff_service ss ON ss.service_id = s.id
+                WHERE ss.staff_id = %s;
+            """, (staff_id,))
+            return cur.fetchall()
+
+def get_staff_for_service(con, service_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT st.*
+                FROM staffmembers st
+                JOIN staff_service ss ON ss.staff_id = st.id
+                WHERE ss.service_id = %s;
+            """, (service_id,))
+            return cur.fetchall()
+        
+def get_business_categories(con, business_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT DISTINCT c.name
+                FROM categories c
+                JOIN service_categories sc ON sc.category_id = c.id
+                JOIN services s ON s.id = sc.service_id
+                WHERE s.business_id = %s
+                ORDER BY c.name;
+            """, (business_id,))
+            return [row["name"] for row in cur.fetchall()]
+
+def get_businesses_by_category(con, category_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT DISTINCT b.*
+                FROM businesses b
+                JOIN services s ON s.business_id = b.id
+                JOIN service_categories sc ON sc.service_id = s.id
+                WHERE sc.category_id = %s
+                ORDER BY b.name;
+            """, (category_id,))
+            return cur.fetchall()
+
 
 
 # -------------------------#
@@ -728,6 +776,17 @@ def create_review(con, review):
                 ),
             )
             return cursor.fetchone()
+
+def add_service_to_staff(con, staff_id: int, service_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO staff_service (staff_id, service_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+                RETURNING *;
+            """, (staff_id, service_id))
+            return cur.fetchone()
 
 
 # -------------------------#
@@ -1063,3 +1122,14 @@ def delete_review(con, review_id: int):
                 "DELETE FROM reviews WHERE id = %s RETURNING id;", (review_id,)
             )
             return cursor.fetchone()
+        
+def remove_service_from_staff(con, staff_id: int, service_id: int):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                DELETE FROM staff_service
+                WHERE staff_id = %s AND service_id = %s
+                RETURNING staff_id;
+            """, (staff_id, service_id))
+            return cur.fetchone()
+

@@ -1,4 +1,6 @@
 import os
+import random
+from datetime import datetime
 
 import psycopg2
 from dotenv import load_dotenv
@@ -11,10 +13,7 @@ PASSWORD = os.getenv("PASSWORD")
 
 def get_connection():
     """
-    Function that returns a single connection
-    In reality, we might use a connection pool, since
-    this way we'll start a new connection each time
-    someone hits one of our endpoints, which isn't great for performance
+    Function that returns a single connection.
     """
     return psycopg2.connect(
         dbname=DATABASE_NAME,
@@ -24,9 +23,10 @@ def get_connection():
         port="5432",  # change if needed
     )
 
+
 def seed_data():
     """
-    Insert a larger realistic Swedish-style dataset.
+    Insert a realistic Swedish-style dataset.
     Assumes an empty database. If users already exist, seeding is skipped.
     """
     connection = get_connection()
@@ -179,35 +179,64 @@ def seed_data():
         admin_ids.append(cursor.fetchone()[0])
 
     # ---------------- BUSINESSES ----------------
+    # owner_index, [main_categories], name, description, street_name, street_number, city, postal_code
+    # "main_categories" here is 1–2 logical domains. The first is stored as main_category_id,
+    # but services will reflect all listed domains.
     businesses_data = [
-        # owner_index, main_category_name, name, description, street_name, street_number, city, postal_code
-        (0, "Massage", "Stockholm Massagecenter", "Avslappnande massage i hjärtat av Stockholm.", "Sveavägen", "12", "Stockholm", "11134"),
-        (1, "Frisör", "City Hair Studio", "Modern frisörsalong nära Centralen.", "Kungsgatan", "45", "Stockholm", "11156"),
-        (2, "Hudvård", "Göteborg Hud & Spa", "Skönhet och återhämtning vid Avenyn.", "Kungsportsavenyen", "3B", "Göteborg", "41136"),
-        (3, "Naglar", "Malmö Nail Lounge", "Nagelbar med fokus på design.", "Södra Förstadsgatan", "21", "Malmö", "21143"),
-        (4, "Massage", "Uppsala Relax", "Massage och avslappning nära Fyrisån.", "Drottninggatan", "7", "Uppsala", "75310"),
-        (5, "Frisör", "Västerås Klipp & Färg", "Personlig frisörsalong i city.", "Stora Gatan", "9", "Västerås", "72212"),
-        (6, "Träning", "FitLab Stockholm", "Personlig träning och PT-grupper.", "Vasagatan", "18", "Stockholm", "11120"),
-        (7, "Hudvård", "Norrköping Skin Clinic", "Hudvårdsklinik med medicinska behandlingar.", "Kungsgatan", "2", "Norrköping", "60220"),
+        (0, ["Massage"], "Stockholm Massagecenter",
+         "Avslappnande massage i hjärtat av Stockholm.",
+         "Sveavägen", "12", "Stockholm", "11134"),
+
+        (1, ["Frisör", "Naglar"], "City Hair Studio",
+         "Modern frisörsalong med nagelbar nära Centralen.",
+         "Kungsgatan", "45", "Stockholm", "11156"),
+
+        (2, ["Hudvård", "Naglar"], "Göteborg Hud & Spa",
+         "Skönhet, hudvård och naglar vid Avenyn.",
+         "Kungsportsavenyen", "3B", "Göteborg", "41136"),
+
+        (3, ["Naglar"], "Malmö Nail Lounge",
+         "Nagelbar med fokus på design.",
+         "Södra Förstadsgatan", "21", "Malmö", "21143"),
+
+        (4, ["Massage", "Träning"], "Uppsala Relax & PT",
+         "Massage och personlig träning nära Fyrisån.",
+         "Drottninggatan", "7", "Uppsala", "75310"),
+
+        (5, ["Frisör"], "Västerås Klipp & Färg",
+         "Personlig frisörsalong i city.",
+         "Stora Gatan", "9", "Västerås", "72212"),
+
+        (6, ["Träning", "Massage"], "FitLab Stockholm",
+         "Personlig träning, PT-grupper och idrottsmassage.",
+         "Vasagatan", "18", "Stockholm", "11120"),
+
+        (7, ["Hudvård"], "Norrköping Skin Clinic",
+         "Hudvårdsklinik med medicinska behandlingar.",
+         "Kungsgatan", "2", "Norrköping", "60220"),
     ]
 
     business_ids = []
     business_main_cat_name_by_id = {}
+    business_categories_by_id = {}
 
-    for i, (owner_index, cat_name, b_name, desc, street, number, city, postal) in enumerate(businesses_data):
+    for i, (owner_index, cat_names, b_name, desc, street, number, city, postal) in enumerate(businesses_data):
         owner_id = provider_ids[owner_index % len(provider_ids)]
-        main_cat_id = categories_by_name[cat_name]
+        # use the first as the "primary" main_category_id
+        primary_cat_name = cat_names[0]
+        primary_cat_id = categories_by_name[primary_cat_name]
         cursor.execute(
             """
             INSERT INTO businesses (owner_id, main_category_id, name, description, street_name, street_number, city, postal_code)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
-            (owner_id, main_cat_id, b_name, desc, street, number, city, postal),
+            (owner_id, primary_cat_id, b_name, desc, street, number, city, postal),
         )
         b_id = cursor.fetchone()[0]
         business_ids.append(b_id)
-        business_main_cat_name_by_id[b_id] = cat_name
+        business_main_cat_name_by_id[b_id] = primary_cat_name
+        business_categories_by_id[b_id] = cat_names[:]  # copy list
 
     # ---------------- STAFF MEMBERS ----------------
     staff_firstnames = ["Maria", "Oskar", "Linda", "Kevin", "Elin", "Patrik", "Sofia", "Mattias", "Jenny", "Tobias"]
@@ -221,17 +250,25 @@ def seed_data():
     }
 
     staff_ids_by_business = {}
+    staff_role_category_by_id = {}  # which main category the staff specializes in
 
     for idx, b_id in enumerate(business_ids):
-        cat_name = business_main_cat_name_by_id[b_id]
-        role = staff_roles_by_category.get(cat_name, "Personal")
+        cat_names = business_categories_by_id[b_id]  # 1–2 logical domains
         staff_ids = []
-        for j in range(3):  # 3 staff per business
+
+        # 3 staff per business, with roles based on business' domains
+        for j in range(3):
             fn = staff_firstnames[(idx + j) % len(staff_firstnames)]
             ln = staff_lastnames[(idx * 2 + j) % len(staff_lastnames)]
             full_name = f"{fn} {ln}"
+
+            # Assign category specialization in a round-robin over the business domains
+            cat_for_staff = cat_names[j % len(cat_names)]
+            role = staff_roles_by_category.get(cat_for_staff, "Personal")
+
             email = f"{fn.lower()}.{ln.lower()}_{b_id}@example.com"
             phone = f"0709{idx}{j}00{j}"
+
             cursor.execute(
                 """
                 INSERT INTO staffmembers (business_id, name, email, phone_number, role)
@@ -240,7 +277,10 @@ def seed_data():
                 """,
                 (b_id, full_name, email, phone, role),
             )
-            staff_ids.append(cursor.fetchone()[0])
+            staff_id = cursor.fetchone()[0]
+            staff_ids.append(staff_id)
+            staff_role_category_by_id[staff_id] = cat_for_staff
+
         staff_ids_by_business[b_id] = staff_ids
 
     # ---------------- BUSINESS IMAGES ----------------
@@ -263,7 +303,7 @@ def seed_data():
 
     # ---------------- BUSINESS OPENING HOURS ----------------
     for b_id in business_ids:
-        # Mon-Fri: 09–18, Sat: 10–16
+        # Mon–Fri: 09–18, Sat: 10–16
         for weekday in range(1, 6):
             cursor.execute(
                 """
@@ -309,57 +349,92 @@ def seed_data():
 
     service_ids_by_business = {}
     service_price_by_id = {}
+    service_ids_by_business_and_category = {}  # b_id -> { main_cat_name: [service_ids...] }
 
     for b_id in business_ids:
-        main_cat_name = business_main_cat_name_by_id[b_id]
-        templates = service_templates_by_main_cat.get(main_cat_name, [])
+        cat_names = business_categories_by_id[b_id]
+        service_ids_by_business_and_category[b_id] = {}
         s_ids = []
-        for (s_name, s_desc, dur, price, cat_names) in templates:
-            cursor.execute(
-                """
-                INSERT INTO services (business_id, name, description, duration_minutes, price)
-                VALUES (%s, %s, %s, %s, %s)
-                RETURNING id;
-                """,
-                (b_id, s_name, s_desc, dur, price),
-            )
-            s_id = cursor.fetchone()[0]
-            s_ids.append(s_id)
-            service_price_by_id[s_id] = price
 
-            # service_categories links
-            for cname in cat_names:
-                cat_id = categories_by_name.get(cname)
-                if cat_id:
-                    cursor.execute(
-                        """
-                        INSERT INTO service_categories (service_id, category_id)
-                        VALUES (%s, %s)
-                        ON CONFLICT DO NOTHING;
-                        """,
-                        (s_id, cat_id),
-                    )
+        for main_cat_name in cat_names:
+            templates = service_templates_by_main_cat.get(main_cat_name, [])
+            for (s_name, s_desc, dur, price, cat_names_for_service) in templates:
+                cursor.execute(
+                    """
+                    INSERT INTO services (business_id, name, description, duration_minutes, price)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING id;
+                    """,
+                    (b_id, s_name, s_desc, dur, price),
+                )
+                s_id = cursor.fetchone()[0]
+                s_ids.append(s_id)
+                service_price_by_id[s_id] = price
 
-            # Also always add main category
-            main_cat_id = categories_by_name[main_cat_name]
-            cursor.execute(
-                """
-                INSERT INTO service_categories (service_id, category_id)
-                VALUES (%s, %s)
-                ON CONFLICT DO NOTHING;
-                """,
-                (s_id, main_cat_id),
-            )
+                # group by main category for staff–service assignment
+                service_ids_by_business_and_category[b_id].setdefault(main_cat_name, []).append(s_id)
+
+                # link to all relevant categories (sub+main)
+                for cname in cat_names_for_service:
+                    cat_id = categories_by_name.get(cname)
+                    if cat_id:
+                        cursor.execute(
+                            """
+                            INSERT INTO service_categories (service_id, category_id)
+                            VALUES (%s, %s)
+                            ON CONFLICT DO NOTHING;
+                            """,
+                            (s_id, cat_id),
+                        )
+
+                # always add main logical category as well
+                main_cat_id = categories_by_name[main_cat_name]
+                cursor.execute(
+                    """
+                    INSERT INTO service_categories (service_id, category_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING;
+                    """,
+                    (s_id, main_cat_id),
+                )
 
         service_ids_by_business[b_id] = s_ids
 
+    # ---------------- STAFF ↔ SERVICES (MANY-TO-MANY) ----------------
+    # Now that we have both staff and services, assign services per staff member based on their specialization.
+    for b_id in business_ids:
+        staff_ids = staff_ids_by_business[b_id]
+        services_by_cat = service_ids_by_business_and_category[b_id]
+        all_services_in_business = service_ids_by_business[b_id]
+
+        for staff_id in staff_ids:
+            cat_for_staff = staff_role_category_by_id.get(staff_id)
+            candidate_services = services_by_cat.get(cat_for_staff)
+
+            # Fallback: if somehow no services for that category, allow all business services
+            if not candidate_services:
+                candidate_services = all_services_in_business
+
+            # Choose a subset of 1–3 services per staff for more realism
+            num_services = min(len(candidate_services), random.randint(1, 3))
+            chosen_services = random.sample(candidate_services, num_services)
+
+            for s_id in chosen_services:
+                cursor.execute(
+                    """
+                    INSERT INTO staff_service (staff_id, service_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING;
+                    """,
+                    (staff_id, s_id),
+                )
+
     # ---------------- BOOKINGS, PAYMENTS, REVIEWS ----------------
     statuses = ["pending", "confirmed", "cancelled", "completed"]
-    payment_methods = ["card", "swish", "klarna", "gift_card", "cash"]
 
     booking_infos = []  # to use later for payments + reviews
 
-    # create ~8 bookings per business
+    # Create ~8 bookings per business
     for b_index, b_id in enumerate(business_ids):
         s_ids = service_ids_by_business[b_id]
         staff_ids = staff_ids_by_business[b_id]
@@ -401,12 +476,10 @@ def seed_data():
                 }
             )
 
-        import random
-
-    # Realistic weight-based payment method selection
+    # ---- PAYMENTS ----
     payment_method_weights = {
         "card": 0.55,
-            "swish": 0.25,
+        "swish": 0.25,
         "klarna": 0.10,
         "gift_card": 0.05,
         "cash": 0.05,
@@ -421,22 +494,19 @@ def seed_data():
                 return method
         return "card"  # fallback
 
-
-    # ---- PAYMENTS ----
-    for i, b in enumerate(booking_infos):
-
+    for b in booking_infos:
         status = b["status"]
         service_id = b["service_id"]
         booking_id = b["id"]
         amount = service_price_by_id[service_id]
 
-        # --- Pending bookings: No payment yet ---
+        # Pending bookings: no payment yet
         if status == "pending":
             continue
 
-        # --- Cancelled bookings ---
+        # Cancelled bookings
         if status == "cancelled":
-            # 50% get a refund, 50% no payment created
+            # 50% get a refund, 50% no payment at all
             if random.random() < 0.5:
                 cursor.execute(
                     """
@@ -447,7 +517,7 @@ def seed_data():
                 )
             continue
 
-        # --- Confirmed bookings ---
+        # Confirmed bookings
         if status == "confirmed":
             r = random.random()
             if r < 0.5:
@@ -466,7 +536,7 @@ def seed_data():
             )
             continue
 
-        # --- Completed bookings ---
+        # Completed bookings
         if status == "completed":
             r = random.random()
             if r < 0.80:
@@ -485,8 +555,7 @@ def seed_data():
             )
             continue
 
-
-    # REVIEWS: for some completed bookings
+    # ---------------- REVIEWS ----------------
     review_texts = [
         ("Fantastiskt!", "Mycket nöjd, kommer tillbaka."),
         ("Bra upplevelse", "Proffsig personal och trevlig lokal."),
@@ -513,8 +582,8 @@ def seed_data():
     cursor.close()
     connection.close()
     print("Seed data inserted successfully.")
-    
+
+
 if __name__ == "__main__":
-    # Only reason to execute this file would be to create new tables, meaning it serves a migration file
     seed_data()
     print("Seed data inserted into tables.")

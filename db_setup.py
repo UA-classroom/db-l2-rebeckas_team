@@ -98,7 +98,7 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS staffmembers (
         id BIGSERIAL PRIMARY KEY,
-        business_id BIGINT NOT NULL REFERENCES businesses(id) ON DELETE SET NULL,
+        business_id BIGINT REFERENCES businesses(id) ON DELETE SET NULL,
         name VARCHAR(50) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         phone_number VARCHAR(25),
@@ -152,6 +152,16 @@ def create_tables():
         PRIMARY KEY (service_id, category_id)
     );
     """)
+    
+        # SERVICE - STAFFMEMBERS (Many-to-Many)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS staff_service (
+    staff_id BIGINT NOT NULL REFERENCES staffmembers(id) ON DELETE CASCADE,
+    service_id BIGINT NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+    PRIMARY KEY (staff_id, service_id)
+    );
+    """)
+    
     
     # BOOKINGS
     cursor.execute("""

@@ -45,6 +45,11 @@ def list_businesses():
     return businesses
 
 
+@app.get("/businesses/top-rated")
+def top_rated_businesses(limit: int = 10):
+    con = get_connection()
+    return db.get_top_rated_businesses(con, limit)
+
 @app.get("/businesses/{business_id}", response_model=BusinessOut)
 def get_business(business_id: int):
     """
@@ -278,15 +283,46 @@ def get_business_rating(business_id: int):
     result = db.get_average_rating_for_business(con, business_id)
     return result
 
-@app.get("/businesses/top-rated")
-def top_rated_businesses(limit: int = 10):
-    con = get_connection()
-    return db.get_top_rated_businesses(con, limit)
-
 @app.get("/businesses/{business_id}/bookings/count")
 def total_bookings_for_business(business_id: int):
     con = get_connection()
     return db.get_total_bookings_for_business(con, business_id)
+
+@app.get("/staff/{staff_id}/services")
+def get_staff_services(staff_id: int):
+    con = get_connection()
+    return db.get_services_for_staff(con, staff_id)
+
+@app.get("/services/{service_id}/staff")
+def get_staff_for_service(service_id: int):
+    con = get_connection()
+    return db.get_staff_for_service(con, service_id)
+
+@app.get("/businesses/{business_id}/categories")
+def get_categories_for_business(business_id: int):
+    con = get_connection()
+    categories = db.get_business_categories(con, business_id)
+    return {
+        "business_id": business_id,
+        "categories": categories
+    }
+    
+@app.get("/categories/{category_id}/businesses")
+def list_businesses_by_category(category_id: int):
+    con = get_connection()
+    businesses = db.get_businesses_by_category(con, category_id)
+
+    if not businesses:
+        return {
+            "category_id": category_id,
+            "businesses": []
+        }
+
+    return {
+        "category_id": category_id,
+        "businesses": businesses
+    }
+
 
 #-------------------------#
 #---------POST------------#
@@ -359,6 +395,12 @@ def create_review_endpoint(data: ReviewCreate):
     con = get_connection()
     review = db.create_review(con, data)
     return review
+
+@app.post("/staff/{staff_id}/services/{service_id}")
+def assign_service_to_staff(staff_id: int, service_id: int):
+    con = get_connection()
+    result = db.add_service_to_staff(con, staff_id, service_id)
+    return {"status": "assigned"}
 
 
 #-------------------------#
@@ -568,3 +610,9 @@ def delete_review_endpoint(review_id: int):
     if not deleted:
         raise HTTPException(status_code=404, detail="Review not found")
     return None
+
+@app.delete("/staff/{staff_id}/services/{service_id}")
+def remove_service_from_staff(staff_id: int, service_id: int):
+    con = get_connection()
+    removed = db.remove_service_from_staff(con, staff_id, service_id)
+    return {"status": "removed" if removed else "not found"}
