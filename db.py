@@ -117,14 +117,38 @@ def get_category_by_id(con, category_id: int):
 def get_all_staffmembers(con):
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM staffmembers;")
+            cursor.execute("""SELECT
+                    staffmembers.id,
+                    staffmembers.business_id,
+                    staffmembers.name,
+                    staffmembers.email,
+                    staffmembers.phone_number,
+                    staffmembers.role,
+                    staffmembers.is_active,
+                    businesses.name AS business_name
+                FROM staffmembers
+                JOIN businesses ON businesses.id = staffmembers.business_id
+                ORDER BY staffmembers.name;""")
             return cursor.fetchall()
 
 
 def get_staffmember_by_id(con, staff_id: int):
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM staffmembers WHERE id = %s;", (staff_id,))
+            cursor.execute("""
+                SELECT
+                    staffmembers.id,
+                    staffmembers.business_id,
+                    staffmembers.name,
+                    staffmembers.email,
+                    staffmembers.phone_number,
+                    staffmembers.role,
+                    staffmembers.is_active,
+                    businesses.name AS business_name
+                FROM staffmembers
+                JOIN businesses ON businesses.id = staffmembers.business_id
+                WHERE staffmembers.id = %s;
+            """, (staff_id,))
             return cursor.fetchone()
 
 

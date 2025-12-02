@@ -31,6 +31,7 @@ from schemas import (
     StaffMemberCreate,
     StaffMemberOut,
     StaffMemberUpdate,
+    StaffMemberDetail,
     UserCreate,
     UserOut,
     UserUpdate,
@@ -103,7 +104,7 @@ def get_user(user_id: int):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@app.get("/categories", response_model=list[CategoryOut])
+@app.get("/categories/", response_model=list[CategoryOut])
 def list_categories():
     con = get_connection()
     return db.get_all_categories(con)
@@ -116,7 +117,7 @@ def get_category(category_id: int):
         raise HTTPException(status_code=404, detail="Category not found")
     return category
 
-@app.get("/staffmembers", response_model=list[StaffMemberOut])
+@app.get("/staffmembers", response_model=list[StaffMemberDetail])
 def list_staffmembers():
     con = get_connection()
     staff = db.get_all_staffmembers(con)
