@@ -52,6 +52,10 @@ class BusinessOut(BusinessBase):
     owner_id: int
     created_at: datetime
 
+class BusinessDetail(BusinessOut):
+    owner_name: str
+    main_category_name: str
+
 
 #-----------------#
 #-------USERS-----#

@@ -25,22 +25,57 @@ start with a connection parameter.
 # -------------------------#
 def get_all_businesses(con):
     """
-    Return a list of all businesses
+    Return a list of all businesses with both IDs and readable names.
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM businesses;")
+            cursor.execute("""
+                SELECT 
+                    businesses.id,
+                    businesses.owner_id,
+                    businesses.main_category_id,
+                    businesses.name,
+                    businesses.description,
+                    businesses.street_name,
+                    businesses.street_number,
+                    businesses.city,
+                    businesses.postal_code,
+                    businesses.created_at,
+                    users.firstname || ' ' || users.lastname AS owner_name,
+                    categories.name AS main_category_name
+                FROM businesses
+                JOIN users ON users.id = businesses.owner_id
+                LEFT JOIN categories ON categories.id = businesses.main_category_id
+                ORDER BY businesses.name;
+            """)
             businesses = cursor.fetchall()
     return businesses
 
 
 def get_business_by_id(con, business_id: int):
     """
-    Return ONE business by id, or None if it doesn't exist.
+    Return ONE business by id with owner_name and main_category_name. NONE if it dosent exist
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM businesses WHERE id = %s;", (business_id,))
+            cursor.execute("""SELECT 
+                    businesses.id,
+                    businesses.owner_id,
+                    businesses.main_category_id,
+                    businesses.name,
+                    businesses.description,
+                    businesses.street_name,
+                    businesses.street_number,
+                    businesses.city,
+                    businesses.postal_code,
+                    businesses.created_at,
+                    users.firstname || ' ' || users.lastname AS owner_name,
+                    categories.name AS main_category_name
+                FROM businesses
+                JOIN users ON users.id = businesses.owner_id
+                LEFT JOIN categories ON categories.id = businesses.main_category_id
+                WHERE businesses.id = %s;
+            """, (business_id,))
             business = cursor.fetchone()
     return business
 

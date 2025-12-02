@@ -12,6 +12,7 @@ from schemas import (
     BusinessImageCreate,
     BusinessImageOut,
     BusinessOut,
+    BusinessDetail,
     BusinessUpdate,
     CategoryCreate,
     CategoryOut,
@@ -52,7 +53,7 @@ but will have different HTTP-verbs.
 #-------------------------#
 #----------GET------------#
 #-------------------------#
-@app.get("/businesses/", response_model=list[BusinessOut])
+@app.get("/businesses/", response_model=list[BusinessDetail])
 def list_businesses():
     """
     GET /businesses/
@@ -68,7 +69,7 @@ def top_rated_businesses(limit: int = 10):
     con = get_connection()
     return db.get_top_rated_businesses(con, limit)
 
-@app.get("/businesses/{business_id}", response_model=BusinessOut)
+@app.get("/businesses/{business_id}", response_model=BusinessDetail)
 def get_business(business_id: int):
     """
     GET /businesses/id
