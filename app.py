@@ -1,21 +1,39 @@
 import os
+
+import db
 import psycopg2
 from db_setup import get_connection
 from fastapi import FastAPI, HTTPException
-
-import db
-
-from schemas import BusinessCreate, BusinessOut, BusinessUpdate
-from schemas import UserCreate, UserUpdate, UserOut
-from schemas import CategoryCreate, CategoryUpdate, CategoryOut
-from schemas import StaffMemberCreate, StaffMemberUpdate, StaffMemberOut
-from schemas import BusinessImageCreate, BusinessImageOut
-from schemas import OpeningHoursUpdateRequest, OpeningHoursOut
-from schemas import ServiceCreate, ServiceUpdate
-from schemas import BookingCreate, BookingUpdate, BookingStatusUpdate
-from schemas import PaymentCreate, PaymentOut, PaymentStatusUpdate
-from schemas import ReviewCreate, ReviewUpdate, ReviewOut
-
+from schemas import (
+    BookingCreate,
+    BookingStatusUpdate,
+    BookingUpdate,
+    BusinessCreate,
+    BusinessImageCreate,
+    BusinessImageOut,
+    BusinessOut,
+    BusinessUpdate,
+    CategoryCreate,
+    CategoryOut,
+    CategoryUpdate,
+    OpeningHoursOut,
+    OpeningHoursUpdateRequest,
+    PaymentCreate,
+    PaymentOut,
+    PaymentStatusUpdate,
+    ReviewCreate,
+    ReviewDetail,
+    ReviewOut,
+    ReviewUpdate,
+    ServiceCreate,
+    ServiceUpdate,
+    StaffMemberCreate,
+    StaffMemberOut,
+    StaffMemberUpdate,
+    UserCreate,
+    UserOut,
+    UserUpdate,
+)
 
 app = FastAPI()
 
@@ -254,7 +272,7 @@ def list_unpaid_bookings_for_business(business_id: int):
     con = get_connection()
     return db.get_unpaid_bookings_for_business(con, business_id)
 
-@app.get("/reviews/{review_id}", response_model=ReviewOut)
+@app.get("/reviews/{review_id}", response_model=ReviewDetail)
 def get_review_endpoint(review_id: int):
     con = get_connection()
     review = db.get_review(con, review_id)

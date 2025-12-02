@@ -1,6 +1,7 @@
+from typing import Optional
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from typing import Optional
 
 """
 This file is responsible for making database queries, which your fastapi endpoints/routes can use.
@@ -397,7 +398,27 @@ def get_unpaid_bookings_for_business(con, business_id: int):
 def get_review(con, review_id: int):
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM reviews WHERE id = %s;", (review_id,))
+            cursor.execute(
+                """SELECT
+            reviews.id,
+            reviews.booking_id,
+            s.name AS service_name,
+            reviews.business_id,
+            bs.name AS business_name,
+            reviews.customer_id,
+            users.firstname ||' '|| users.lastname AS customer_name,
+            reviews.rating,
+            reviews.title,
+            reviews.comment,
+            reviews.created_at
+            FROM reviews
+            JOIN users ON users.id = reviews.customer_id
+            JOIN businesses bs ON bs.id = reviews.business_id
+            JOIN bookings b ON b.id = reviews.booking_id
+            JOIN services s ON s.id = b.service_id
+            WHERE reviews.id = %s;""",
+                (review_id,),
+            )
             return cursor.fetchone()
 
 
@@ -475,14 +496,18 @@ def get_top_rated_businesses(con, limit: int = 10):
             )
             return cursor.fetchall()
 
+
 def get_total_bookings_for_business(con, business_id: int):
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT COUNT(*) AS total_bookings
                 FROM bookings
                 WHERE business_id = %s;
-            """, (business_id,))
+            """,
+                (business_id,),
+            )
             return cursor.fetchone()
 def get_services_for_staff(con, staff_id: int):
     with con:
