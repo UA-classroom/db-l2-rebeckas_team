@@ -28,6 +28,7 @@ from schemas import (
     ReviewUpdate,
     ServiceCreate,
     ServiceUpdate,
+    ServiceDetail,
     StaffMemberCreate,
     StaffMemberOut,
     StaffMemberUpdate,
@@ -178,7 +179,7 @@ def get_service_endpoint(service_id: int):
         raise HTTPException(status_code=404, detail="Service not found")
 
     return service
-@app.get("/businesses/{business_id}/services")
+@app.get("/businesses/{business_id}/services", response_model=list[ServiceDetail])
 def list_services_for_business(business_id: int):
     con = get_connection()
     services = db.get_services_by_business(con, business_id)

@@ -243,6 +243,9 @@ class ServiceUpdate(ServiceBase):
     """Schema used when fully updating (PUT) a service."""
     business_id: int
     
+class ServiceDetail(ServiceBase):
+    business_name:str
+    
 #-----------------#
 #-----BOOKINGS----#
 #-----------------#

@@ -216,11 +216,25 @@ def get_services_by_business(con, business_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT * FROM services WHERE business_id = %s;
-            """,
-                (business_id,),
-            )
-            return cursor.fetchall()
+                SELECT
+                    services.id,
+                    services.business_id,
+                    services.name,
+                    services.description,
+                    services.duration_minutes,
+                    services.price,
+                    services.is_active,
+                    businesses.name AS business_name
+                FROM services
+                JOIN businesses ON businesses.id = services.business_id
+                WHERE services.business_id = %s;
+            """, (business_id,))
+            services = cursor.fetchall()
+
+    # Attach category names (list) to each service
+    for service in services:
+        service["categories"] = get_categories_for_service(con, service["id"])
+    return services
 
 
 def get_service(con, service_id: int):
