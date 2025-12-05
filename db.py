@@ -1,3 +1,5 @@
+from typing import Optional
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -18,31 +20,1400 @@ start with a connection parameter.
 """
 
 
-### THIS IS JUST AN EXAMPLE OF A FUNCTION FOR INSPIRATION FOR A LIST-OPERATION (FETCHING MANY ENTRIES)
-# def get_items(con):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute("SELECT * FROM items;")
-#             items = cursor.fetchall()
-#     return items
+# -------------------------#
+# ----------GET------------#
+# -------------------------#
+def get_all_businesses(con):
+    """
+    Return a list of all businesses with both IDs and readable names.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT 
+                    businesses.id,
+                    businesses.owner_id,
+                    businesses.main_category_id,
+                    businesses.name,
+                    businesses.description,
+                    businesses.street_name,
+                    businesses.street_number,
+                    businesses.city,
+                    businesses.postal_code,
+                    businesses.created_at,
+                    users.firstname || ' ' || users.lastname AS owner_name,
+                    categories.name AS main_category_name
+                FROM businesses
+                JOIN users ON users.id = businesses.owner_id
+                LEFT JOIN categories ON categories.id = businesses.main_category_id
+                ORDER BY businesses.name;
+            """)
+            businesses = cursor.fetchall()
+    return businesses
 
 
-### THIS IS JUST INSPIRATION FOR A DETAIL OPERATION (FETCHING ONE ENTRY)
-# def get_item(con, item_id):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute("""SELECT * FROM items WHERE id = %s""", (item_id,))
-#             item = cursor.fetchone()
-#             return item
+def get_business_by_id(con, business_id: int):
+    """
+    Return ONE business by id with owner_name and main_category_name. NONE if it dosent exist
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""SELECT 
+                    businesses.id,
+                    businesses.owner_id,
+                    businesses.main_category_id,
+                    businesses.name,
+                    businesses.description,
+                    businesses.street_name,
+                    businesses.street_number,
+                    businesses.city,
+                    businesses.postal_code,
+                    businesses.created_at,
+                    users.firstname || ' ' || users.lastname AS owner_name,
+                    categories.name AS main_category_name
+                FROM businesses
+                JOIN users ON users.id = businesses.owner_id
+                LEFT JOIN categories ON categories.id = businesses.main_category_id
+                WHERE businesses.id = %s;
+            """, (business_id,))
+            business = cursor.fetchone()
+    return business
 
 
-### THIS IS JUST INSPIRATION FOR A CREATE-OPERATION
-# def add_item(con, title, description):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute(
-#                 "INSERT INTO items (title, description) VALUES (%s, %s) RETURNING id;",
-#                 (title, description),
-#             )
-#             item_id = cursor.fetchone()["id"]
-#     return item_id
+def get_all_users(con):
+    """
+    Return a list of all users
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM users;")
+            return cursor.fetchall()
+
+
+def get_user_by_id(con, user_id: int):
+    """
+    Return ONE user by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM users WHERE id = %s;", (user_id,))
+            return cursor.fetchone()
+
+
+def get_all_categories(con):
+    """
+    Returns all categories in the database.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM categories;")
+            return cursor.fetchall()
+
+
+def get_category_by_id(con, category_id: int):
+    """
+    Returns one category by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM categories WHERE id = %s;", (category_id,))
+            return cursor.fetchone()
+
+
+def get_all_staffmembers(con):
+    """
+    Returns all staff members in the database, including their business names.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""SELECT
+                    staffmembers.id,
+                    staffmembers.business_id,
+                    staffmembers.name,
+                    staffmembers.email,
+                    staffmembers.phone_number,
+                    staffmembers.role,
+                    staffmembers.is_active,
+                    businesses.name AS business_name
+                FROM staffmembers
+                JOIN businesses ON businesses.id = staffmembers.business_id
+                ORDER BY staffmembers.name;""")
+            return cursor.fetchall()
+
+
+def get_staffmember_by_id(con, staff_id: int):
+    """
+    Returns one staff member by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT
+                    staffmembers.id,
+                    staffmembers.business_id,
+                    staffmembers.name,
+                    staffmembers.email,
+                    staffmembers.phone_number,
+                    staffmembers.role,
+                    staffmembers.is_active,
+                    businesses.name AS business_name
+                FROM staffmembers
+                JOIN businesses ON businesses.id = staffmembers.business_id
+                WHERE staffmembers.id = %s;
+            """, (staff_id,))
+            return cursor.fetchone()
+
+
+def get_staffmembers_by_business(con, business_id: int):
+    """
+    Get att the staff in one buissness
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT * FROM staffmembers WHERE business_id = %s;", (business_id,)
+            )
+            return cursor.fetchall()
+
+
+def get_all_business_images(con):
+    """
+    Returns all business images in the database.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM business_images;")
+            return cursor.fetchall()
+
+
+def get_images_by_business(con, business_id: int):
+    """
+    Get ALL images for ONE business
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT * FROM business_images WHERE business_id = %s ORDER BY sort_order;",
+                (business_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_business_image(con, image_id: int):
+    """
+    Returns one business image by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM business_images WHERE id = %s;", (image_id,))
+            return cursor.fetchone()
+
+
+def get_opening_hours_for_business(con, business_id: int):
+    """
+    Get opening-hours for ONE business
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM business_opening_hours
+                WHERE business_id = %s
+                ORDER BY weekday;
+                """,
+                (business_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_services_by_business(con, business_id: int):
+    """
+    Get ALL services for ONE business
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    services.id,
+                    services.business_id,
+                    services.name,
+                    services.description,
+                    services.duration_minutes,
+                    services.price,
+                    services.is_active,
+                    businesses.name AS business_name
+                FROM services
+                JOIN businesses ON businesses.id = services.business_id
+                WHERE services.business_id = %s;
+            """, (business_id,))
+            services = cursor.fetchall()
+
+    # Attach category names (list) to each service
+    for service in services:
+        service["categories"] = get_categories_for_service(con, service["id"])
+    return services
+
+
+def get_service(con, service_id: int):
+    """
+    Returns one service by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM services WHERE id = %s;
+            """,
+                (service_id,),
+            )
+            return cursor.fetchone()
+
+
+def get_categories_for_service(con, service_id: int):
+    """
+    Returns all categories linked to a specific service.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT c.*
+                FROM categories c
+                JOIN service_categories sc ON c.id = sc.category_id
+                WHERE sc.service_id = %s;
+                """,
+                (service_id,),
+            )
+            return cur.fetchall()
+
+
+def get_services_for_category(con, category_id: int):
+    """
+    Returns all services linked to a specific category.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT s.*
+                FROM services s
+                JOIN service_categories sc ON s.id = sc.service_id
+                WHERE sc.category_id = %s;
+                """,
+                (category_id,),
+            )
+            return cur.fetchall()
+
+
+def get_services_by_business_and_category(con, business_id: int, category_id: int):
+    """
+    Returns all services for a business within a specific category.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT s.*
+                FROM services s
+                JOIN service_categories sc ON s.id = sc.service_id
+                WHERE s.business_id = %s
+                AND sc.category_id = %s;
+            """,
+                (business_id, category_id),
+            )
+            return cursor.fetchall()
+
+
+def get_categories_for_business(con, business_id: int):
+    """
+    Returns all categories associated with a specific business.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT c.*
+                FROM categories c
+                JOIN service_categories sc ON c.id = sc.category_id
+                JOIN services s ON sc.service_id = s.id
+                WHERE s.business_id = %s;
+            """,
+                (business_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_services_by_categories(con, category_ids: list[int]):
+    """
+    Returns all services that belong to any of the given category IDs.
+    """
+    placeholders = ",".join(["%s"] * len(category_ids))  # e.g. %s,%s,%s
+
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                f"""
+                SELECT DISTINCT s.*
+                FROM services s
+                JOIN service_categories sc ON s.id = sc.service_id
+                WHERE sc.category_id IN ({placeholders});
+            """,
+                category_ids,
+            )
+            return cursor.fetchall()
+
+
+def get_booking(con, booking_id: int):
+    """
+    Returns one booking by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM bookings WHERE id = %s;", (booking_id,))
+            return cursor.fetchone()
+
+
+def get_bookings(con):
+    """
+    Returns all bookings in the database.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM bookings;")
+            return cursor.fetchall()
+
+
+def get_bookings_by_customer(con, customer_id: int):
+    """
+    Returns all bookings for a specific customer.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM bookings
+                WHERE customer_id = %s
+                ORDER BY starttime;
+            """,
+                (customer_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_bookings_by_business(con, business_id: int):
+    """
+    Returns all bookings for a specific business.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM bookings
+                WHERE business_id = %s
+                ORDER BY starttime;
+            """,
+                (business_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_bookings_by_staff(con, staff_id: int):
+    """
+    Returns all bookings assigned to a specific staff member.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM bookings
+                WHERE staff_id = %s
+                ORDER BY starttime;
+            """,
+                (staff_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_bookings_by_service(con, service_id: int):
+    """
+    Returns all bookings for a specific service.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM bookings
+                WHERE service_id = %s
+                ORDER BY starttime;
+            """,
+                (service_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_all_payments(con):
+    """
+    Returns all bookings for a specific service.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM payments;")
+            return cursor.fetchall()
+
+
+def get_payment(con, payment_id: int):
+    """
+    Returns one payment by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM payments WHERE id = %s;", (payment_id,))
+            return cursor.fetchone()
+
+
+def get_payments_by_booking(con, booking_id: int):
+    """
+    Returns all payments for a specific booking.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT * FROM payments WHERE booking_id = %s;", (booking_id,)
+            )
+            return cursor.fetchall()
+
+
+def get_total_revenue_for_business(con, business_id: int):
+    """
+    Returns the total paid revenue for a specific business.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT COALESCE(SUM(p.amount), 0) AS total_revenue
+                FROM payments p
+                JOIN bookings b ON p.booking_id = b.id
+                WHERE b.business_id = %s
+                AND p.status = 'paid';
+            """,
+                (business_id,),
+            )
+            return cursor.fetchone()
+
+
+def get_unpaid_bookings(con):
+    """
+    Returns all bookings that have no associated paid payment.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT b.*
+                FROM bookings b
+                LEFT JOIN payments p ON p.booking_id = b.id
+                    AND p.status = 'paid'
+                WHERE p.id IS NULL;
+            """)
+            return cursor.fetchall()
+
+
+def get_unpaid_bookings_for_business(con, business_id: int):
+    """
+    Returns all unpaid bookings for a specific business.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT b.*
+                FROM bookings b
+                LEFT JOIN payments p 
+                    ON p.booking_id = b.id
+                    AND p.status = 'paid'
+                WHERE b.business_id = %s
+                AND p.id IS NULL;
+            """,
+                (business_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_review(con, review_id: int):
+    """
+    Returns one detailed review by id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """SELECT
+            reviews.id,
+            reviews.booking_id,
+            s.name AS service_name,
+            reviews.business_id,
+            bs.name AS business_name,
+            reviews.customer_id,
+            users.firstname ||' '|| users.lastname AS customer_name,
+            reviews.rating,
+            reviews.title,
+            reviews.comment,
+            reviews.created_at
+            FROM reviews
+            JOIN users ON users.id = reviews.customer_id
+            JOIN businesses bs ON bs.id = reviews.business_id
+            JOIN bookings b ON b.id = reviews.booking_id
+            JOIN services s ON s.id = b.service_id
+            WHERE reviews.id = %s;""",
+                (review_id,),
+            )
+            return cursor.fetchone()
+
+
+def get_all_reviews(con):
+    """
+    Returns all reviews in the database.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM reviews ORDER BY created_at DESC;")
+            return cursor.fetchall()
+
+
+def get_reviews_by_business(con, business_id: int):
+    """
+    Returns all reviews for a specific business.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT *
+                FROM reviews
+                WHERE business_id = %s
+                ORDER BY created_at DESC;
+            """,
+                (business_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_reviews_by_customer(con, customer_id: int):
+    """
+    Returns all reviews written by a specific customer.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT *
+                FROM reviews
+                WHERE customer_id = %s
+                ORDER BY created_at DESC;
+            """,
+                (customer_id,),
+            )
+            return cursor.fetchall()
+
+
+def get_average_rating_for_business(con, business_id: int):
+    """
+    Returns the average rating and total review count for a specific business.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT 
+                    COALESCE(AVG(rating), 0) AS average_rating,
+                    COUNT(*) AS review_count
+                FROM reviews
+                WHERE business_id = %s;
+            """,
+                (business_id,),
+            )
+            return cursor.fetchone()
+
+
+def get_top_rated_businesses(con, limit: int = 10):
+    """
+    Returns the top-rated businesses, limited by the given number.
+    Only businesses with at least one review are included.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT 
+                    b.id AS business_id,
+                    b.name,
+                    COALESCE(AVG(r.rating), 0) AS average_rating,
+                    COUNT(r.id) AS review_count
+                FROM businesses b
+                LEFT JOIN reviews r ON r.business_id = b.id
+                GROUP BY b.id
+                HAVING COUNT(r.id) > 0   -- Only include businesses with reviews
+                ORDER BY average_rating DESC, review_count DESC
+                LIMIT %s;
+            """,
+                (limit,),
+            )
+            return cursor.fetchall()
+
+
+def get_total_bookings_for_business(con, business_id: int):
+    """
+    Returns the total number of bookings for a specific business.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS total_bookings
+                FROM bookings
+                WHERE business_id = %s;
+            """,
+                (business_id,),
+            )
+            return cursor.fetchone()
+
+def get_services_for_staff(con, staff_id: int):
+    """
+    Returns all services assigned to a specific staff member.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT s.*
+                FROM services s
+                JOIN staff_service ss ON ss.service_id = s.id
+                WHERE ss.staff_id = %s;
+            """, (staff_id,))
+            return cur.fetchall()
+
+def get_staff_for_service(con, service_id: int):
+    """
+    Returns all staff members who are assigned to a specific service.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT st.*
+                FROM staffmembers st
+                JOIN staff_service ss ON ss.staff_id = st.id
+                WHERE ss.service_id = %s;
+            """, (service_id,))
+            return cur.fetchall()
+        
+def get_business_categories(con, business_id: int):
+    """
+    Returns all category names associated with a specific business.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT DISTINCT c.name
+                FROM categories c
+                JOIN service_categories sc ON sc.category_id = c.id
+                JOIN services s ON s.id = sc.service_id
+                WHERE s.business_id = %s
+                ORDER BY c.name;
+            """, (business_id,))
+            return [row["name"] for row in cur.fetchall()]
+
+def get_businesses_by_category(con, category_id: int):
+    """
+    Returns all businesses associated with a specific category.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT DISTINCT b.*
+                FROM businesses b
+                JOIN services s ON s.business_id = b.id
+                JOIN service_categories sc ON sc.service_id = s.id
+                WHERE sc.category_id = %s
+                ORDER BY b.name;
+            """, (category_id,))
+            return cur.fetchall()
+
+
+
+# -------------------------#
+# ---------POST------------#
+# -------------------------#
+def create_business(con, business):
+    """
+    Insert a new business into the database and return its id.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO businesses (
+                    owner_id,
+                    main_category_id,
+                    name,
+                    description,
+                    street_name,
+                    street_number,
+                    city,
+                    postal_code
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (
+                    business.owner_id,
+                    business.main_category_id,
+                    business.name,
+                    business.description,
+                    business.street_name,
+                    business.street_number,
+                    business.city,
+                    business.postal_code,
+                ),
+            )
+            business_id = cursor.fetchone()["id"]
+    return business_id
+
+
+def create_user(con, user):
+    """
+    Insert a new user into the database and return its id.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO users (
+                    role, firstname, lastname, username, email, phone_number
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (
+                    user.role,
+                    user.firstname,
+                    user.lastname,
+                    user.username,
+                    user.email,
+                    user.phone_number,
+                ),
+            )
+            return cursor.fetchone()["id"]
+
+
+def create_category(con, category):
+    """
+    Creates a new category and returns its id.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO categories (name, description, parent_id)
+                VALUES (%s, %s, %s)
+                RETURNING id;
+                """,
+                (category.name, category.description, category.parent_id),
+            )
+            return cursor.fetchone()["id"]
+
+
+def create_staffmember(con, staff_member):
+    """
+    Creates a new staff member and returns its id.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO staffmembers (
+                    business_id,
+                    name,
+                    email,
+                    phone_number,
+                    role,
+                    is_active
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (
+                    staff_member.business_id,
+                    staff_member.name,
+                    staff_member.email,
+                    staff_member.phone_number,
+                    staff_member.role,
+                    staff_member.is_active,
+                ),
+            )
+            return cursor.fetchone()["id"]
+
+
+def create_business_image(con, business_image):
+    """
+    Creates a new business image and returns its id.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO business_images (business_id, image_url, is_logo, sort_order)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (
+                    business_image.business_id,
+                    business_image.image_url,
+                    business_image.is_logo,
+                    business_image.sort_order,
+                ),
+            )
+            return cursor.fetchone()["id"]
+
+
+def replace_opening_hours(con, business_id: int, hours_list):
+    """
+    Replaces all opening hours for a business with the provided list.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            # delete old hours
+            cursor.execute(
+                "DELETE FROM business_opening_hours WHERE business_id = %s;",
+                (business_id,),
+            )
+            # insert new hours
+            for entry in hours_list:
+                cursor.execute(
+                    """
+                    INSERT INTO business_opening_hours (business_id, weekday, open_time, closing_time)
+                    VALUES (%s, %s, %s, %s);
+                    """,
+                    (business_id, entry.weekday, entry.open_time, entry.closing_time),
+                )
+
+            return True
+
+
+def create_service(con, service: dict):
+    """
+    Creates a new service and returns the created service record.
+    """
+
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO services (business_id, name, description, duration_minutes, price, is_active)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING *;
+            """,
+                (
+                    service["business_id"],
+                    service["name"],
+                    service.get("description"),
+                    service["duration_minutes"],
+                    service["price"],
+                    service.get("is_active", True),
+                ),
+            )
+            return cursor.fetchone()
+
+
+def add_category_to_service(con, service_id: int, category_id: int):
+    """
+    Adds a category to a service. Returns the inserted row, or None if it already exists.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO service_categories (service_id, category_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+                RETURNING *;
+            """,
+                (service_id, category_id),
+            )
+            return cursor.fetchone()
+
+
+def create_booking(con, booking: dict):
+    """
+    Creates a new booking and returns the created booking record.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO bookings (customer_id, business_id, service_id, staff_id, 
+                                    starttime, endtime, status, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING *;
+            """,
+                (
+                    booking["customer_id"],
+                    booking["business_id"],
+                    booking["service_id"],
+                    booking.get("staff_id"),
+                    booking["starttime"],
+                    booking["endtime"],
+                    booking["status"],
+                    booking.get("notes"),
+                ),
+            )
+            return cursor.fetchone()
+
+
+def create_payment(con, data):
+    """
+    Creates a new payment and returns the created payment record.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO payments (booking_id, amount, payment_method, status)
+                VALUES (%s, %s, %s, %s)
+                RETURNING *;
+                """,
+                (data.booking_id, data.amount, data.payment_method, data.status),
+            )
+            return cursor.fetchone()
+
+
+def create_review(con, review):
+    """
+    Creates a new review and returns the created review record.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO reviews (
+                    booking_id, business_id, customer_id, rating, title, comment
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING *;
+            """,
+                (
+                    review.booking_id,
+                    review.business_id,
+                    review.customer_id,
+                    review.rating,
+                    review.title,
+                    review.comment,
+                ),
+            )
+            return cursor.fetchone()
+
+def add_service_to_staff(con, staff_id: int, service_id: int):
+    """
+    Assigns a service to a staff member. Returns the inserted row, or None if it already exists.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO staff_service (staff_id, service_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+                RETURNING *;
+            """, (staff_id, service_id))
+            return cur.fetchone()
+
+
+# -------------------------#
+# ----------PUT------------#
+# -------------------------#
+def update_business(con, business_id: int, business):
+    """
+    Update an existing business based on business_id.
+    The updated business is returned as a dictionary
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE businesses
+                SET owner_id = %s,
+                    main_category_id = %s,
+                    name = %s,
+                    description = %s,
+                    street_name = %s,
+                    street_number = %s,
+                    city = %s,
+                    postal_code = %s
+                WHERE id = %s
+                RETURNING *;
+                """,
+                (
+                    business.owner_id,
+                    business.main_category_id,
+                    business.name,
+                    business.description,
+                    business.street_name,
+                    business.street_number,
+                    business.city,
+                    business.postal_code,
+                    business_id,
+                ),
+            )
+            updated = cursor.fetchone()
+            return updated
+
+
+def update_user(con, user_id: int, user):
+    """
+    Update an existing user based on user_id.
+    The updated user is returned as a dictionary
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE users
+                SET role = %s,
+                    firstname = %s,
+                    lastname = %s,
+                    username = %s,
+                    email = %s,
+                    phone_number = %s
+                WHERE id = %s
+                RETURNING *;
+                """,
+                (
+                    user.role,
+                    user.firstname,
+                    user.lastname,
+                    user.username,
+                    user.email,
+                    user.phone_number,
+                    user_id,
+                ),
+            )
+            return cursor.fetchone()
+
+
+def update_category(con, category_id: int, category):
+    """
+    Updates a category and returns the updated record, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE categories
+                SET name = %s,
+                    description = %s,
+                    parent_id = %s
+                WHERE id = %s
+                RETURNING *;
+                """,
+                (category.name, category.description, category.parent_id, category_id),
+            )
+            return cursor.fetchone()
+
+
+def update_staffmember(con, staff_id: int, staff_member):
+    """
+    Updates a staff member and returns the updated record, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE staffmembers
+                SET business_id = %s,
+                    name = %s,
+                    email = %s,
+                    phone_number = %s,
+                    role = %s,
+                    is_active = %s
+                WHERE id = %s
+                RETURNING *;
+                """,
+                (
+                    staff_member.business_id,
+                    staff_member.name,
+                    staff_member.email,
+                    staff_member.phone_number,
+                    staff_member.role,
+                    staff_member.is_active,
+                    staff_id,
+                ),
+            )
+            return cursor.fetchone()
+
+
+def update_service(con, service_id: int, service: dict):
+    """
+    Updates a service and returns the updated record, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE services
+                SET business_id = %s, name = %s, description = %s,
+                    duration_minutes = %s, price = %s, is_active = %s
+                WHERE id = %s
+                RETURNING *;
+            """,
+                (
+                    service["business_id"],
+                    service["name"],
+                    service.get("description"),
+                    service["duration_minutes"],
+                    service["price"],
+                    service.get("is_active", True),
+                    service_id,
+                ),
+            )
+            return cursor.fetchone()
+
+
+def update_booking(con, booking_id: int, booking: dict):
+    """
+    Updates a booking and returns the updated record, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE bookings
+                SET customer_id=%s, business_id=%s, service_id=%s,
+                    staff_id=%s, starttime=%s, endtime=%s, 
+                    status=%s, notes=%s
+                WHERE id=%s
+                RETURNING *;
+            """,
+                (
+                    booking["customer_id"],
+                    booking["business_id"],
+                    booking["service_id"],
+                    booking.get("staff_id"),
+                    booking["starttime"],
+                    booking["endtime"],
+                    booking["status"],
+                    booking.get("notes"),
+                    booking_id,
+                ),
+            )
+            return cursor.fetchone()
+
+
+def update_review(con, review_id: int, review):
+    """
+    Updates a review and returns the updated record, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE reviews
+                SET booking_id=%s, business_id=%s, customer_id=%s,
+                    rating=%s, title=%s, comment=%s
+                WHERE id=%s
+                RETURNING *;
+            """,
+                (
+                    review.booking_id,
+                    review.business_id,
+                    review.customer_id,
+                    review.rating,
+                    review.title,
+                    review.comment,
+                    review_id,
+                ),
+            )
+            return cursor.fetchone()
+
+
+# -------------------------#
+# ----------PATCH----------#
+# -------------------------#
+
+
+def update_booking_status(con, booking_id: int, status: str):
+    """
+    Updates the status of a booking and returns the updated record, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE bookings
+                SET status = %s
+                WHERE id = %s
+                RETURNING *;
+            """,
+                (status, booking_id),
+            )
+            return cursor.fetchone()
+
+
+def update_payment_status(con, payment_id: int, status: str):
+    """
+    Updates the status of a payment and returns the updated record, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE payments
+                SET status = %s
+                WHERE id = %s
+                RETURNING *;
+            """,
+                (status, payment_id),
+            )
+            return cursor.fetchone()
+
+
+# -------------------------#
+# ---------DELETE----------#
+# -------------------------#
+def delete_business(con, business_id: int):
+    """
+    Deletes an existing business based on business_id.
+    Returns the deleted business_id if the deletion was successful.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM businesses WHERE id = %s RETURNING id;", (business_id,)
+            )
+            deleted = cursor.fetchone()
+            return deleted
+
+
+def delete_user(con, user_id: int):
+    """
+    Deletes an existing user based on user_id.
+    Returns the deleted user_id if the deletion was successful.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("DELETE FROM users WHERE id = %s RETURNING id;", (user_id,))
+            return cursor.fetchone()
+
+
+def delete_category(con, category_id: int):
+    """
+    Deletes a category and returns the deleted id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM categories WHERE id = %s RETURNING id;", (category_id,)
+            )
+            return cursor.fetchone()
+
+
+def delete_staffmember(con, staff_id: int):
+    """
+    Deletes a staff member and returns the deleted id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM staffmembers WHERE id = %s RETURNING id;", (staff_id,)
+            )
+            return cursor.fetchone()
+
+
+def delete_business_image(con, image_id: int):
+    """
+    Deletes a business image and returns the deleted id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM business_images WHERE id = %s RETURNING id;", (image_id,)
+            )
+            return cursor.fetchone()
+
+
+def delete_service(con, service_id: int):
+    """
+    Deletes a service and returns the deleted id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                DELETE FROM services WHERE id = %s RETURNING id;
+            """,
+                (service_id,),
+            )
+            return cursor.fetchone()
+
+
+def remove_category_from_service(con, service_id: int, category_id: int):
+    """
+    Removes a category from a service and returns the service_id, or None if not found.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                DELETE FROM service_categories
+                WHERE service_id = %s AND category_id = %s
+                RETURNING service_id;
+            """,
+                (service_id, category_id),
+            )
+            return cursor.fetchone()
+
+
+def delete_booking(con, booking_id: int):
+    """
+    Deletes a booking and returns the deleted id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM bookings WHERE id = %s RETURNING id;", (booking_id,)
+            )
+            return cursor.fetchone()
+
+
+def delete_payment(con, payment_id: int):
+    """
+    Deletes a payment and returns the deleted id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM payments WHERE id = %s RETURNING id;", (payment_id,)
+            )
+            return cursor.fetchone()
+
+
+def delete_review(con, review_id: int):
+    """
+    Deletes a review and returns the deleted id, or None if it doesn't exist.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "DELETE FROM reviews WHERE id = %s RETURNING id;", (review_id,)
+            )
+            return cursor.fetchone()
+        
+def remove_service_from_staff(con, staff_id: int, service_id: int):
+    """
+    Removes a service assignment from a staff member and returns the staff_id, or None if not found.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                DELETE FROM staff_service
+                WHERE staff_id = %s AND service_id = %s
+                RETURNING staff_id;
+            """, (staff_id, service_id))
+            return cur.fetchone()
+
