@@ -101,6 +101,9 @@ def get_user_by_id(con, user_id: int):
 
 
 def get_all_categories(con):
+    """
+    Returns all categories in the database.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM categories;")
@@ -108,6 +111,9 @@ def get_all_categories(con):
 
 
 def get_category_by_id(con, category_id: int):
+    """
+    Returns one category by id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM categories WHERE id = %s;", (category_id,))
@@ -115,6 +121,9 @@ def get_category_by_id(con, category_id: int):
 
 
 def get_all_staffmembers(con):
+    """
+    Returns all staff members in the database, including their business names.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("""SELECT
@@ -133,6 +142,9 @@ def get_all_staffmembers(con):
 
 
 def get_staffmember_by_id(con, staff_id: int):
+    """
+    Returns one staff member by id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("""
@@ -165,6 +177,9 @@ def get_staffmembers_by_business(con, business_id: int):
 
 
 def get_all_business_images(con):
+    """
+    Returns all business images in the database.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM business_images;")
@@ -185,6 +200,9 @@ def get_images_by_business(con, business_id: int):
 
 
 def get_business_image(con, image_id: int):
+    """
+    Returns one business image by id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM business_images WHERE id = %s;", (image_id,))
@@ -238,6 +256,9 @@ def get_services_by_business(con, business_id: int):
 
 
 def get_service(con, service_id: int):
+    """
+    Returns one service by id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -250,6 +271,9 @@ def get_service(con, service_id: int):
 
 
 def get_categories_for_service(con, service_id: int):
+    """
+    Returns all categories linked to a specific service.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
@@ -265,6 +289,9 @@ def get_categories_for_service(con, service_id: int):
 
 
 def get_services_for_category(con, category_id: int):
+    """
+    Returns all services linked to a specific category.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
@@ -280,6 +307,9 @@ def get_services_for_category(con, category_id: int):
 
 
 def get_services_by_business_and_category(con, business_id: int, category_id: int):
+    """
+    Returns all services for a business within a specific category.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -296,6 +326,9 @@ def get_services_by_business_and_category(con, business_id: int, category_id: in
 
 
 def get_categories_for_business(con, business_id: int):
+    """
+    Returns all categories associated with a specific business.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -312,6 +345,9 @@ def get_categories_for_business(con, business_id: int):
 
 
 def get_services_by_categories(con, category_ids: list[int]):
+    """
+    Returns all services that belong to any of the given category IDs.
+    """
     placeholders = ",".join(["%s"] * len(category_ids))  # e.g. %s,%s,%s
 
     with con:
@@ -329,6 +365,9 @@ def get_services_by_categories(con, category_ids: list[int]):
 
 
 def get_booking(con, booking_id: int):
+    """
+    Returns one booking by id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM bookings WHERE id = %s;", (booking_id,))
@@ -336,6 +375,9 @@ def get_booking(con, booking_id: int):
 
 
 def get_bookings(con):
+    """
+    Returns all bookings in the database.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM bookings;")
@@ -343,6 +385,9 @@ def get_bookings(con):
 
 
 def get_bookings_by_customer(con, customer_id: int):
+    """
+    Returns all bookings for a specific customer.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -357,6 +402,9 @@ def get_bookings_by_customer(con, customer_id: int):
 
 
 def get_bookings_by_business(con, business_id: int):
+    """
+    Returns all bookings for a specific business.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -371,6 +419,9 @@ def get_bookings_by_business(con, business_id: int):
 
 
 def get_bookings_by_staff(con, staff_id: int):
+    """
+    Returns all bookings assigned to a specific staff member.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -385,6 +436,9 @@ def get_bookings_by_staff(con, staff_id: int):
 
 
 def get_bookings_by_service(con, service_id: int):
+    """
+    Returns all bookings for a specific service.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -399,6 +453,9 @@ def get_bookings_by_service(con, service_id: int):
 
 
 def get_all_payments(con):
+    """
+    Returns all bookings for a specific service.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM payments;")
@@ -406,6 +463,9 @@ def get_all_payments(con):
 
 
 def get_payment(con, payment_id: int):
+    """
+    Returns one payment by id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM payments WHERE id = %s;", (payment_id,))
@@ -413,6 +473,9 @@ def get_payment(con, payment_id: int):
 
 
 def get_payments_by_booking(con, booking_id: int):
+    """
+    Returns all payments for a specific booking.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -422,6 +485,9 @@ def get_payments_by_booking(con, booking_id: int):
 
 
 def get_total_revenue_for_business(con, business_id: int):
+    """
+    Returns the total paid revenue for a specific business.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -438,6 +504,9 @@ def get_total_revenue_for_business(con, business_id: int):
 
 
 def get_unpaid_bookings(con):
+    """
+    Returns all bookings that have no associated paid payment.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("""
@@ -451,6 +520,9 @@ def get_unpaid_bookings(con):
 
 
 def get_unpaid_bookings_for_business(con, business_id: int):
+    """
+    Returns all unpaid bookings for a specific business.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -469,6 +541,9 @@ def get_unpaid_bookings_for_business(con, business_id: int):
 
 
 def get_review(con, review_id: int):
+    """
+    Returns one detailed review by id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -496,6 +571,9 @@ def get_review(con, review_id: int):
 
 
 def get_all_reviews(con):
+    """
+    Returns all reviews in the database.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM reviews ORDER BY created_at DESC;")
@@ -503,6 +581,9 @@ def get_all_reviews(con):
 
 
 def get_reviews_by_business(con, business_id: int):
+    """
+    Returns all reviews for a specific business.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -518,6 +599,9 @@ def get_reviews_by_business(con, business_id: int):
 
 
 def get_reviews_by_customer(con, customer_id: int):
+    """
+    Returns all reviews written by a specific customer.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -533,6 +617,9 @@ def get_reviews_by_customer(con, customer_id: int):
 
 
 def get_average_rating_for_business(con, business_id: int):
+    """
+    Returns the average rating and total review count for a specific business.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -549,6 +636,10 @@ def get_average_rating_for_business(con, business_id: int):
 
 
 def get_top_rated_businesses(con, limit: int = 10):
+    """
+    Returns the top-rated businesses, limited by the given number.
+    Only businesses with at least one review are included.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -571,6 +662,9 @@ def get_top_rated_businesses(con, limit: int = 10):
 
 
 def get_total_bookings_for_business(con, business_id: int):
+    """
+    Returns the total number of bookings for a specific business.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -582,7 +676,11 @@ def get_total_bookings_for_business(con, business_id: int):
                 (business_id,),
             )
             return cursor.fetchone()
+
 def get_services_for_staff(con, staff_id: int):
+    """
+    Returns all services assigned to a specific staff member.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
@@ -594,6 +692,9 @@ def get_services_for_staff(con, staff_id: int):
             return cur.fetchall()
 
 def get_staff_for_service(con, service_id: int):
+    """
+    Returns all staff members who are assigned to a specific service.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
@@ -605,6 +706,9 @@ def get_staff_for_service(con, service_id: int):
             return cur.fetchall()
         
 def get_business_categories(con, business_id: int):
+    """
+    Returns all category names associated with a specific business.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
@@ -618,6 +722,9 @@ def get_business_categories(con, business_id: int):
             return [row["name"] for row in cur.fetchall()]
 
 def get_businesses_by_category(con, category_id: int):
+    """
+    Returns all businesses associated with a specific category.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
@@ -698,6 +805,9 @@ def create_user(con, user):
 
 
 def create_category(con, category):
+    """
+    Creates a new category and returns its id.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -712,6 +822,9 @@ def create_category(con, category):
 
 
 def create_staffmember(con, staff_member):
+    """
+    Creates a new staff member and returns its id.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -740,6 +853,9 @@ def create_staffmember(con, staff_member):
 
 
 def create_business_image(con, business_image):
+    """
+    Creates a new business image and returns its id.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -759,6 +875,9 @@ def create_business_image(con, business_image):
 
 
 def replace_opening_hours(con, business_id: int, hours_list):
+    """
+    Replaces all opening hours for a business with the provided list.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             # delete old hours
@@ -780,6 +899,10 @@ def replace_opening_hours(con, business_id: int, hours_list):
 
 
 def create_service(con, service: dict):
+    """
+    Creates a new service and returns the created service record.
+    """
+
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -801,6 +924,9 @@ def create_service(con, service: dict):
 
 
 def add_category_to_service(con, service_id: int, category_id: int):
+    """
+    Adds a category to a service. Returns the inserted row, or None if it already exists.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -816,6 +942,9 @@ def add_category_to_service(con, service_id: int, category_id: int):
 
 
 def create_booking(con, booking: dict):
+    """
+    Creates a new booking and returns the created booking record.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -840,6 +969,9 @@ def create_booking(con, booking: dict):
 
 
 def create_payment(con, data):
+    """
+    Creates a new payment and returns the created payment record.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -854,6 +986,9 @@ def create_payment(con, data):
 
 
 def create_review(con, review):
+    """
+    Creates a new review and returns the created review record.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -876,6 +1011,9 @@ def create_review(con, review):
             return cursor.fetchone()
 
 def add_service_to_staff(con, staff_id: int, service_id: int):
+    """
+    Assigns a service to a staff member. Returns the inserted row, or None if it already exists.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
@@ -960,6 +1098,9 @@ def update_user(con, user_id: int, user):
 
 
 def update_category(con, category_id: int, category):
+    """
+    Updates a category and returns the updated record, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -977,6 +1118,9 @@ def update_category(con, category_id: int, category):
 
 
 def update_staffmember(con, staff_id: int, staff_member):
+    """
+    Updates a staff member and returns the updated record, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1005,6 +1149,9 @@ def update_staffmember(con, staff_id: int, staff_member):
 
 
 def update_service(con, service_id: int, service: dict):
+    """
+    Updates a service and returns the updated record, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1029,6 +1176,9 @@ def update_service(con, service_id: int, service: dict):
 
 
 def update_booking(con, booking_id: int, booking: dict):
+    """
+    Updates a booking and returns the updated record, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1056,6 +1206,9 @@ def update_booking(con, booking_id: int, booking: dict):
 
 
 def update_review(con, review_id: int, review):
+    """
+    Updates a review and returns the updated record, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1085,6 +1238,9 @@ def update_review(con, review_id: int, review):
 
 
 def update_booking_status(con, booking_id: int, status: str):
+    """
+    Updates the status of a booking and returns the updated record, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1100,6 +1256,9 @@ def update_booking_status(con, booking_id: int, status: str):
 
 
 def update_payment_status(con, payment_id: int, status: str):
+    """
+    Updates the status of a payment and returns the updated record, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1143,6 +1302,9 @@ def delete_user(con, user_id: int):
 
 
 def delete_category(con, category_id: int):
+    """
+    Deletes a category and returns the deleted id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1152,6 +1314,9 @@ def delete_category(con, category_id: int):
 
 
 def delete_staffmember(con, staff_id: int):
+    """
+    Deletes a staff member and returns the deleted id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1161,6 +1326,9 @@ def delete_staffmember(con, staff_id: int):
 
 
 def delete_business_image(con, image_id: int):
+    """
+    Deletes a business image and returns the deleted id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1170,6 +1338,9 @@ def delete_business_image(con, image_id: int):
 
 
 def delete_service(con, service_id: int):
+    """
+    Deletes a service and returns the deleted id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1182,6 +1353,9 @@ def delete_service(con, service_id: int):
 
 
 def remove_category_from_service(con, service_id: int, category_id: int):
+    """
+    Removes a category from a service and returns the service_id, or None if not found.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1196,6 +1370,9 @@ def remove_category_from_service(con, service_id: int, category_id: int):
 
 
 def delete_booking(con, booking_id: int):
+    """
+    Deletes a booking and returns the deleted id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1205,6 +1382,9 @@ def delete_booking(con, booking_id: int):
 
 
 def delete_payment(con, payment_id: int):
+    """
+    Deletes a payment and returns the deleted id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1214,6 +1394,9 @@ def delete_payment(con, payment_id: int):
 
 
 def delete_review(con, review_id: int):
+    """
+    Deletes a review and returns the deleted id, or None if it doesn't exist.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -1222,6 +1405,9 @@ def delete_review(con, review_id: int):
             return cursor.fetchone()
         
 def remove_service_from_staff(con, staff_id: int, service_id: int):
+    """
+    Removes a service assignment from a staff member and returns the staff_id, or None if not found.
+    """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
