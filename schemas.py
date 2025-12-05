@@ -167,6 +167,9 @@ class StaffMemberOut(StaffMemberBase):
     id: int
 
 class StaffMemberDetail(StaffMemberOut):
+    """
+    Extended staff member schema including the business name.
+    """
     business_name: str
     
     
@@ -204,6 +207,9 @@ class BusinessImageOut(BusinessImageBase):
 #-----------------#
 
 class OpeningHoursEntry(BaseModel):
+    """
+    Represents a single day's opening hours for a business.
+    """
     weekday: int   # 1–7
     open_time: time
     closing_time: time
@@ -216,6 +222,9 @@ class OpeningHoursUpdateRequest(BaseModel):
     hours: list[OpeningHoursEntry]
 
 class OpeningHoursOut(BaseModel):
+    """
+    Output schema for a single opening hours entry.
+    """
     id: int
     business_id: int
     weekday: int
@@ -227,6 +236,9 @@ class OpeningHoursOut(BaseModel):
 #-----------------#
 
 class ServiceBase(BaseModel):
+    """
+    Base schema for service fields shared across create and update operations.
+    """
     name: str
     description: Optional[str] = None
     duration_minutes: int
@@ -244,6 +256,9 @@ class ServiceUpdate(ServiceBase):
     business_id: int
     
 class ServiceDetail(ServiceBase):
+    """
+    Extended service schema including the business name.
+    """
     business_name:str
     
 #-----------------#
@@ -251,6 +266,9 @@ class ServiceDetail(ServiceBase):
 #-----------------#
 
 class BookingBase(BaseModel):
+    """
+    Base schema for booking data shared across create and update operations.
+    """
     customer_id: int
     business_id: int
     service_id: int
@@ -269,6 +287,9 @@ class BookingUpdate(BookingBase):
     pass
 
 class BookingStatusUpdate(BaseModel):
+    """
+    Schema for updating the status of a booking.
+    """
     status: str  # must be one of your allowed values
     status: str = Field(
         ...,
@@ -280,6 +301,9 @@ class BookingStatusUpdate(BaseModel):
 #-----------------#
 
 class PaymentBase(BaseModel):
+    """
+    Base schema for payment information shared across create and update operations.
+    """
     booking_id: Optional[int] = None
     amount: Decimal
     payment_method: str
@@ -305,6 +329,9 @@ class PaymentOut(PaymentBase):
     created_at: datetime
 
 class PaymentStatusUpdate(BaseModel):
+    """
+    Schema for updating the status of a payment.
+    """
     status: str = Field(
         ...,
         pattern="^(pending|paid|refunded|failed)$"
@@ -315,6 +342,9 @@ class PaymentStatusUpdate(BaseModel):
 #-----------------#
 
 class ReviewBase(BaseModel):
+    """
+    Base schema for review data shared across create and update operations.
+    """
     booking_id: int
     business_id: int
     customer_id: int
@@ -331,10 +361,16 @@ class ReviewUpdate(ReviewBase):
     pass
 
 class ReviewOut(ReviewBase):
+    """
+    Output schema for a review, including id and timestamp.
+    """
     id: int
     created_at: datetime
 
 class ReviewDetail(ReviewOut):
+    """
+    Extended review schema including related service, business, and customer names.
+    """
     service_name: str
     business_name: str
     customer_name: str
