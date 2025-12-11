@@ -1,6 +1,13 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+import os
+
+
 import db
 from db_setup import get_connection
-from fastapi import FastAPI, HTTPException
+from datetime import datetime, timedelta
+
+
 from schemas import (
     BookingCreate,
     BookingStatusUpdate,
@@ -37,9 +44,9 @@ from schemas import (
 
 app = FastAPI()
 
-"""
-FastAPI endpoints for the booking system.
-"""
+# --- STATIC FILES: Image Hosting Setup ---
+os.makedirs("static/uploads", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 #-------------------------#
 #----------GET------------#
@@ -421,8 +428,6 @@ def list_reviews_for_customer(customer_id: int):
     return db.get_reviews_by_customer(con, customer_id)
 
 
-# ---------------- BUSINESS METRICS ---------------- #
-
 @app.get("/businesses/{business_id}/rating", status_code=200)
 def get_business_rating(business_id: int):
     """
@@ -439,6 +444,7 @@ def total_bookings_for_business(business_id: int):
     """
     con = get_connection()
     return db.get_total_bookings_for_business(con, business_id)
+
 
 
 #-------------------------#
@@ -549,6 +555,27 @@ def assign_service_to_staff(staff_id: int, service_id: int):
     con = get_connection()
     db.add_service_to_staff(con, staff_id, service_id)
     return {"status": "assigned"}
+
+from fastapi import UploadFile, File
+
+@app.post("/upload-image", status_code=201)
+async def upload_business_image(file: UploadFile = File(...)):
+    """
+    Uploads an image file and stores it locally.
+    Returns a URL that the frontend can use.
+    """
+
+    # Validate file type
+    if file.content_type not in ["image/jpeg", "image/png"]:
+        raise HTTPException(status_code=400, detail="Invalid file type")
+
+    # Save file
+    file_location = f"static/uploads/{file.filename}"
+    with open(file_location, "wb") as buffer:
+        buffer.write(await file.read())
+
+    # Return public URL
+    return {"image_url": f"/static/uploads/{file.filename}"}
 
 
 #-------------------------#
