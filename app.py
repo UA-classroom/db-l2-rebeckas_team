@@ -130,10 +130,10 @@ def get_category(category_id: int):
         raise HTTPException(status_code=404, detail="Category not found")
     return category
 
-@app.get("/staffmembers", response_model=list[StaffMemberDetail])
+@app.get("/staffmembers/", response_model=list[StaffMemberDetail])
 def list_staffmembers():
     """
-    GET /staffmembers
+    GET /staffmembers/
     Returns all staff members in the database.
     """
     con = get_connection()

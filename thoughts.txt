@@ -8,3 +8,7 @@ This is correct atm.
 Endpoints som inte fungerar: 
 /bookings/unpaid - ta bort, ej relevant eftersom vi redan har unpaid per företag
 /buissnesses/toprated - need to move this further up in the get to avoid clashing
+
+
+We need to add response models in the Gets in APP.py
+We need to add more specific/important for the frontend columns in the response models
