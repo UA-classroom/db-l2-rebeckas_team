@@ -1,12 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 import os
-
+from fastapi.middleware.cors import CORSMiddleware
 
 import db
 from db_setup import get_connection
 from datetime import datetime
-
 
 from schemas import (
     BookingCreate,
@@ -44,6 +43,15 @@ from schemas import (
 )
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # --- STATIC FILES: Image Hosting Setup ---
 os.makedirs("static/uploads", exist_ok=True)
@@ -118,6 +126,29 @@ def list_categories():
     con = get_connection()
     return db.get_all_categories(con)
 
+@app.get("/categories/tree")
+def get_category_tree():
+    """
+    GET /categories/tree
+    Returns the full category hierarchy as nested dictionaries.
+    """
+    con = get_connection()
+    categories = db.get_all_categories(con)
+
+    # Build {id: category_dict}
+    nodes = {c["id"]: {**c, "children": []} for c in categories}
+
+    roots = []
+
+    for c in categories:
+        if c["parent_id"]:
+            parent = nodes.get(c["parent_id"])
+            if parent:
+                parent["children"].append(nodes[c["id"]])
+        else:
+            roots.append(nodes[c["id"]])
+
+    return roots
 
 @app.get("/categories/{category_id}", response_model=CategoryOut, status_code=200)
 def get_category(category_id: int):
@@ -485,28 +516,6 @@ def get_available_slots(business_id: int, service_id: int, date: str):
         "available_slots": available
     }
 
-@app.get("/categories/tree")
-def get_category_tree():
-    """
-    GET /categories/tree
-    Returns a full hierarchical category tree.
-    Each category includes a list of its child categories.
-    """
-    con = get_connection()
-    categories = db.get_all_categories(con)
-
-    # Build a dict for fast lookup
-    cat_dict = {category["id"]: {**category, "children": []} for category in categories}
-
-    # Build hierarchy
-    root_nodes = []
-    for category in categories:
-        if category["parent_id"] is None:
-            root_nodes.append(cat_dict[category["id"]])
-        else:
-            cat_dict[category["parent_id"]]["children"].append(cat_dict[category["id"]])
-
-    return root_nodes
 
 @app.get("/categories/{category_id}/children")
 def get_category_children(category_id: int):
@@ -532,7 +541,19 @@ def get_category_parent(category_id: int):
 
     return db.get_category_by_id(con, category["parent_id"])
 
+@app.get("/customers/{customer_id}/bookings/upcoming", response_model=list[BookingOut])
+def upcoming_bookings(customer_id: int):
+    con = get_connection()
+    bookings = db.get_bookings_by_customer(con, customer_id)
+    now = datetime.now()
+    return [b for b in bookings if b["starttime"] > now]
 
+@app.get("/customers/{customer_id}/bookings/past", response_model=list[BookingOut])
+def past_bookings(customer_id: int):
+    con = get_connection()
+    bookings = db.get_bookings_by_customer(con, customer_id)
+    now = datetime.now()
+    return [b for b in bookings if b["endtime"] < now]
 #-------------------------#
 #---------POST------------#
 #-------------------------#
@@ -787,6 +808,32 @@ def update_payment_status_route(payment_id: int, data: PaymentStatusUpdate):
     updated = db.update_payment_status(con, payment_id, data.status)
     if not updated:
         raise HTTPException(status_code=404, detail="Payment not found")
+    return updated
+
+@app.patch("/bookings/{booking_id}/cancel")
+def cancel_booking(booking_id: int):
+    con = get_connection()
+    updated = db.update_booking_status(con, booking_id, "cancelled")
+    if not updated:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return {"status": "cancelled"}
+
+@app.patch("/bookings/{booking_id}/reschedule")
+def reschedule_booking(booking_id: int, start: datetime, end: datetime):
+    con = get_connection()
+    booking = db.get_booking(con, booking_id)
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    # Overlap check can be added here
+
+    updated = db.update_booking(con, booking_id, {
+        **booking,
+        "starttime": start,
+        "endtime": end
+    })
+
     return updated
 
 
