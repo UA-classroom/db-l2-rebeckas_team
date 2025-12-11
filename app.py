@@ -1,17 +1,17 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
 import os
-from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
 
 import db
 from db_setup import get_connection
-from datetime import datetime
-
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from schemas import (
+    AvailableSlotsOut,
     BookingCreate,
+    BookingOut,
     BookingStatusUpdate,
     BookingUpdate,
-    BookingOut,
     BusinessCreate,
     BusinessDetail,
     BusinessImageCreate,
@@ -30,8 +30,8 @@ from schemas import (
     ReviewOut,
     ReviewUpdate,
     ServiceCreate,
-    ServiceUpdate,
     ServiceDetail,
+    ServiceUpdate,
     StaffMemberCreate,
     StaffMemberDetail,
     StaffMemberOut,
@@ -39,7 +39,6 @@ from schemas import (
     UserCreate,
     UserOut,
     UserUpdate,
-    AvailableSlotsOut
 )
 
 app = FastAPI()
@@ -663,7 +662,8 @@ def assign_service_to_staff(staff_id: int, service_id: int):
     db.add_service_to_staff(con, staff_id, service_id)
     return {"status": "assigned"}
 
-from fastapi import UploadFile, File
+from fastapi import File, UploadFile
+
 
 @app.post("/upload-image", status_code=201)
 async def upload_business_image(file: UploadFile = File(...)):
