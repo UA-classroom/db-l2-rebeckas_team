@@ -1,7 +1,4 @@
-import os
-
 import db
-import psycopg2
 from db_setup import get_connection
 from fastapi import FastAPI, HTTPException
 from schemas import (
@@ -28,7 +25,7 @@ from schemas import (
     ReviewUpdate,
     ServiceCreate,
     ServiceUpdate,
-    ServiceDetail,   # FIXED: Removed ServiceOut
+    ServiceDetail,
     StaffMemberCreate,
     StaffMemberDetail,
     StaffMemberOut,
@@ -41,33 +38,24 @@ from schemas import (
 app = FastAPI()
 
 """
-ADD ENDPOINTS FOR FASTAPI HERE
-Make sure to do the following:
-- Use the correct HTTP method (e.g get, post, put, delete)
-- Use correct STATUS CODES, e.g 200, 400, 401 etc. when returning a result to the user
-- Use pydantic models whenever you receive user data and need to validate the structure and data types (VG)
-This means you need some error handling that determine what should be returned to the user
-Read more: https://www.geeksforgeeks.org/10-most-common-http-status-codes/
-- Use correct URL paths the resource, e.g some endpoints should be located at the exact same URL, 
-but will have different HTTP-verbs.
+FastAPI endpoints for the booking system.
 """
 
 #-------------------------#
 #----------GET------------#
 #-------------------------#
 
-@app.get("/businesses/", response_model=list[BusinessDetail])
+@app.get("/businesses/", response_model=list[BusinessDetail], status_code=200)
 def list_businesses():
     """
     GET /businesses/
     Returns all businesses in the database.
     """
     con = get_connection()
-    businesses = db.get_all_businesses(con)
-    return businesses
+    return db.get_all_businesses(con)
 
 
-@app.get("/businesses/top-rated")
+@app.get("/businesses/top-rated", status_code=200)
 def top_rated_businesses(limit: int = 10):
     """
     GET /businesses/top-rated
@@ -77,7 +65,7 @@ def top_rated_businesses(limit: int = 10):
     return db.get_top_rated_businesses(con, limit)
 
 
-@app.get("/businesses/{business_id}", response_model=BusinessDetail)
+@app.get("/businesses/{business_id}", response_model=BusinessDetail, status_code=200)
 def get_business(business_id: int):
     """
     GET /businesses/id
@@ -90,18 +78,17 @@ def get_business(business_id: int):
     return business
 
 
-@app.get("/users/", response_model=list[UserOut])
+@app.get("/users/", response_model=list[UserOut], status_code=200)
 def list_users():
     """
     GET /users/
     Returns all users in the database.
     """
     con = get_connection()
-    users = db.get_all_users(con)
-    return users
+    return db.get_all_users(con)
 
 
-@app.get("/users/{user_id}", response_model=UserOut)
+@app.get("/users/{user_id}", response_model=UserOut, status_code=200)
 def get_user(user_id: int):
     """
     GET /users/id
@@ -114,7 +101,7 @@ def get_user(user_id: int):
     return user
 
 
-@app.get("/categories/", response_model=list[CategoryOut])
+@app.get("/categories/", response_model=list[CategoryOut], status_code=200)
 def list_categories():
     """
     GET /categories/
@@ -124,7 +111,7 @@ def list_categories():
     return db.get_all_categories(con)
 
 
-@app.get("/categories/{category_id}", response_model=CategoryOut)
+@app.get("/categories/{category_id}", response_model=CategoryOut, status_code=200)
 def get_category(category_id: int):
     """
     GET /categories/id
@@ -137,18 +124,17 @@ def get_category(category_id: int):
     return category
 
 
-@app.get("/staffmembers/", response_model=list[StaffMemberDetail])
+@app.get("/staffmembers/", response_model=list[StaffMemberDetail], status_code=200)
 def list_staffmembers():
     """
     GET /staffmembers/
     Returns all staff members in the database.
     """
     con = get_connection()
-    staff = db.get_all_staffmembers(con)
-    return staff
+    return db.get_all_staffmembers(con)
 
 
-@app.get("/staffmembers/{staff_id}", response_model=StaffMemberOut)
+@app.get("/staffmembers/{staff_id}", response_model=StaffMemberOut, status_code=200)
 def get_staffmember(staff_id: int):
     """
     GET /staffmembers/id
@@ -161,17 +147,16 @@ def get_staffmember(staff_id: int):
     return staff
 
 
-@app.get("/businesses/{business_id}/staffmembers", response_model=list[StaffMemberOut])
+@app.get("/businesses/{business_id}/staffmembers", response_model=list[StaffMemberOut], status_code=200)
 def list_staff_for_business(business_id: int):
     """
     Returns all staff members belonging to a specific business.
     """
     con = get_connection()
-    staff = db.get_staffmembers_by_business(con, business_id)
-    return staff
+    return db.get_staffmembers_by_business(con, business_id)
 
 
-@app.get("/business-images", response_model=list[BusinessImageOut])
+@app.get("/business-images", response_model=list[BusinessImageOut], status_code=200)
 def list_all_images():
     """
     GET /business-images
@@ -181,31 +166,30 @@ def list_all_images():
     return db.get_all_business_images(con)
 
 
-@app.get("/businesses/{business_id}/images", response_model=list[BusinessImageOut])
+@app.get("/businesses/{business_id}/images", response_model=list[BusinessImageOut], status_code=200)
 def list_images_for_business(business_id: int):
     """
     GET /businesses/id/images
     Returns all images for a specific business.
     """
     con = get_connection()
-    images = db.get_images_by_business(con, business_id)
-    return images
+    return db.get_images_by_business(con, business_id)
 
 
-@app.get("/business-images/{image_id}", response_model=BusinessImageOut)
+@app.get("/business-images/{image_id}", response_model=BusinessImageOut, status_code=200)
 def get_business_image(image_id: int):
     """
     GET /business-images/id
     Returns one business image, or 404 if not found.
     """
     con = get_connection()
-    img = db.get_business_image(con, image_id)
-    if not img:
+    image = db.get_business_image(con, image_id)
+    if not image:
         raise HTTPException(status_code=404, detail="Image not found")
-    return img
+    return image
 
 
-@app.get("/businesses/{business_id}/opening-hours", response_model=list[OpeningHoursOut])
+@app.get("/businesses/{business_id}/opening-hours", response_model=list[OpeningHoursOut], status_code=200)
 def get_opening_hours_for_business_route(business_id: int):
     """
     GET /businesses/id/opening-hours
@@ -215,19 +199,18 @@ def get_opening_hours_for_business_route(business_id: int):
     return db.get_opening_hours_for_business(con, business_id)
 
 
-@app.get("/services/search-filter")
+@app.get("/services/search-filter", status_code=200)
 def filter_services_by_categories(categories: str):
     """
     GET /services/search-filter
     Returns services filtered by a comma-separated list of category IDs.
     """
     con = get_connection()
-    category_ids = [int(c) for c in categories.split(",")]
-    services = db.get_services_by_categories(con, category_ids)
-    return services
+    ids = [int(c) for c in categories.split(",")]
+    return db.get_services_by_categories(con, ids)
 
 
-@app.get("/services/{service_id}", response_model=ServiceDetail)
+@app.get("/services/{service_id}", status_code=200)
 def get_service_endpoint(service_id: int):
     """
     GET /services/id
@@ -235,66 +218,65 @@ def get_service_endpoint(service_id: int):
     """
     con = get_connection()
     service = db.get_service(con, service_id)
-
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
-
-    service["categories"] = db.get_categories_for_service(con, service_id)
     return service
 
 
-@app.get("/businesses/{business_id}/services", response_model=list[ServiceDetail])
+@app.get("/businesses/{business_id}/services", response_model=list[ServiceDetail], status_code=200)
 def list_services_for_business(business_id: int):
     """
     GET /businesses/id/services
     Returns all services belonging to a specific business.
     """
     con = get_connection()
-    services = db.get_services_by_business(con, business_id)
-    return services
+    return db.get_services_by_business(con, business_id)
 
 
-@app.get("/categories/{category_id}/services")
+@app.get("/categories/{category_id}/services", status_code=200)
 def list_services_for_category(category_id: int):
     """
     GET /categories/id/services
-    Returns all services linked to a specific category.
+    Returns services for one category.
     """
     con = get_connection()
     return db.get_services_for_category(con, category_id)
 
 
-@app.get("/services/{service_id}/categories")
+@app.get("/services/{service_id}/categories", status_code=200)
 def list_categories_for_service(service_id: int):
     """
     GET /services/id/categories
-    Returns all categories associated with a specific service.
+    Returns all categories linked to a service.
     """
     con = get_connection()
     return db.get_categories_for_service(con, service_id)
 
 
-# ---------------------- MERGED FIXED ENDPOINT ----------------------
-@app.get("/businesses/{business_id}/categories")
-def list_categories_for_business(business_id: int):
+@app.get("/businesses/{business_id}/categories/{category_id}/services", status_code=200)
+def list_services_in_category_for_business(business_id: int, category_id: int):
     """
-    GET /businesses/id/categories
-    Returns all categories for a specific business, including all category fields.
+    Returns all services for a business in a category.
     """
     con = get_connection()
-    category_objects = db.get_categories_for_business(con, business_id)
+    return db.get_services_by_business_and_category(con, business_id, category_id)
 
-    return {
-        "business_id": business_id,
-        "categories": category_objects
-    }
-# -------------------------------------------------------------------
 
-@app.get("/bookings/{booking_id}", response_model=BookingOut)
+@app.get("/businesses/{business_id}/categories", status_code=200)
+def list_categories_for_business(business_id: int):
+    """
+    Returns categories used by a business.
+    """
+    con = get_connection()
+    return db.get_categories_for_business(con, business_id)
+
+
+# ---------------- BOOKING ENDPOINTS ---------------- #
+
+@app.get("/bookings/{booking_id}", response_model=BookingOut, status_code=200)
 def get_booking_endpoint(booking_id: int):
     """
-    GET /bookings/id
-    Returns one booking, or 404 if not found.
+    Returns one booking.
     """
     con = get_connection()
     booking = db.get_booking(con, booking_id)
@@ -303,71 +285,84 @@ def get_booking_endpoint(booking_id: int):
     return booking
 
 
-@app.get("/bookings", response_model=list[BookingOut])
+@app.get("/bookings", response_model=list[BookingOut], status_code=200)
 def list_bookings():
     """
-    GET /bookings
-    Returns all bookings in the database.
+    Returns all bookings.
     """
     con = get_connection()
     return db.get_bookings(con)
 
 
-@app.get("/customers/{customer_id}/bookings", response_model=list[BookingOut])
+@app.get("/customers/{customer_id}/bookings", response_model=list[BookingOut], status_code=200)
 def list_bookings_for_customer(customer_id: int):
     """
-    GET /customers/id/bookings
-    Returns all bookings made by a specific customer.
+    Returns bookings for one customer.
     """
     con = get_connection()
     return db.get_bookings_by_customer(con, customer_id)
 
 
-@app.get("/businesses/{business_id}/bookings", response_model=list[BookingOut])
+@app.get("/businesses/{business_id}/bookings", response_model=list[BookingOut], status_code=200)
 def list_bookings_for_business(business_id: int):
     """
-    GET /businesses/id/bookings
-    Returns all bookings for a specific business.
+    Returns bookings for a business.
     """
     con = get_connection()
     return db.get_bookings_by_business(con, business_id)
 
 
-@app.get("/staff/{staff_id}/bookings", response_model=list[BookingOut])
+@app.get("/staff/{staff_id}/bookings", response_model=list[BookingOut], status_code=200)
 def list_bookings_for_staff(staff_id: int):
     """
-    GET /staff/id/bookings
-    Returns all bookings assigned to a specific staff member.
+    Returns bookings for a staff member.
     """
     con = get_connection()
     return db.get_bookings_by_staff(con, staff_id)
 
 
-@app.get("/services/{service_id}/bookings", response_model=list[BookingOut])
+@app.get("/services/{service_id}/bookings", response_model=list[BookingOut], status_code=200)
 def list_bookings_for_service(service_id: int):
     """
-    GET /services/id/bookings
-    Returns all bookings for a specific service.
+    Returns bookings for one service.
     """
     con = get_connection()
     return db.get_bookings_by_service(con, service_id)
 
 
-@app.get("/payments", response_model=list[PaymentOut])
+@app.get("/bookings/unpaid", response_model=list[dict], status_code=200)
+def list_unpaid_bookings():
+    """
+    Returns unpaid bookings.
+    """
+    con = get_connection()
+    return db.get_unpaid_bookings(con)
+
+
+@app.get("/businesses/{business_id}/bookings/unpaid", response_model=list[dict], status_code=200)
+def list_unpaid_bookings_for_business(business_id: int):
+    """
+    Returns unpaid bookings for one business.
+    """
+    con = get_connection()
+    return db.get_unpaid_bookings_for_business(con, business_id)
+
+
+# ---------------- PAYMENTS ---------------- #
+
+@app.get("/payments", response_model=list[PaymentOut], status_code=200)
 def list_payments():
     """
-    GET /payments
-    Returns all payments in the database.
+    Returns all payments.
     """
     con = get_connection()
     return db.get_all_payments(con)
 
 
-@app.get("/payments/{payment_id}", response_model=PaymentOut)
+@app.get("/payments/{payment_id}", response_model=PaymentOut, status_code=200)
 def get_payment(payment_id: int):
     """
-    GET /payments/id
-    Returns one payment, or 404 if not found.
+    Returns one payment.
     """
     con = get_connection()
     payment = db.get_payment(con, payment_id)
@@ -376,52 +371,21 @@ def get_payment(payment_id: int):
     return payment
 
 
-@app.get("/bookings/{booking_id}/payments", response_model=list[PaymentOut])
+@app.get("/bookings/{booking_id}/payments", response_model=list[PaymentOut], status_code=200)
 def list_payments_for_booking(booking_id: int):
     """
-    GET /bookings/id/payments
-    Returns all payments linked to a specific booking.
+    Returns payments for one booking.
     """
     con = get_connection()
     return db.get_payments_by_booking(con, booking_id)
 
 
-@app.get("/businesses/{business_id}/revenue")
-def get_business_revenue(business_id: int):
-    """
-    GET /businesses/id/revenue
-    Returns the total revenue for a specific business.
-    """
-    con = get_connection()
-    result = db.get_total_revenue_for_business(con, business_id)
-    return result
+# ---------------- REVIEWS ---------------- #
 
-
-@app.get("/bookings/unpaid")
-def list_unpaid_bookings():
-    """
-    GET /bookings/unpaid
-    Returns all unpaid bookings in the database.
-    """
-    con = get_connection()
-    return db.get_unpaid_bookings(con)
-
-
-@app.get("/businesses/{business_id}/bookings/unpaid")
-def list_unpaid_bookings_for_business(business_id: int):
-    """
-    GET /businesses/id/bookings/unpaid
-    Returns all unpaid bookings for a specific business.
-    """
-    con = get_connection()
-    return db.get_unpaid_bookings_for_business(con, business_id)
-
-
-@app.get("/reviews/{review_id}", response_model=ReviewOut)
+@app.get("/reviews/{review_id}", response_model=ReviewOut, status_code=200)
 def get_review_endpoint(review_id: int):
     """
-    GET /reviews/id
-    Returns one review with detailed information, or 404 if not found.
+    Returns one review.
     """
     con = get_connection()
     review = db.get_review(con, review_id)
@@ -430,96 +394,52 @@ def get_review_endpoint(review_id: int):
     return review
 
 
-@app.get("/reviews", response_model=list[ReviewOut])
+@app.get("/reviews", response_model=list[ReviewOut], status_code=200)
 def list_reviews():
     """
-    GET /reviews
-    Returns all reviews in the database.
+    Returns all reviews.
     """
     con = get_connection()
     return db.get_all_reviews(con)
 
 
-@app.get("/businesses/{business_id}/reviews", response_model=list[ReviewOut])
+@app.get("/businesses/{business_id}/reviews", response_model=list[ReviewOut], status_code=200)
 def list_reviews_for_business(business_id: int):
     """
-    GET /businesses/id/reviews
-    Returns all reviews for a specific business.
+    Returns reviews for one business.
     """
     con = get_connection()
     return db.get_reviews_by_business(con, business_id)
 
 
-@app.get("/customers/{customer_id}/reviews", response_model=list[ReviewOut])
+@app.get("/customers/{customer_id}/reviews", response_model=list[ReviewOut], status_code=200)
 def list_reviews_for_customer(customer_id: int):
     """
-    GET /customers/id/reviews
-    Returns all reviews written by a specific customer.
+    Returns reviews by customer.
     """
     con = get_connection()
     return db.get_reviews_by_customer(con, customer_id)
 
 
-@app.get("/businesses/{business_id}/rating")
+# ---------------- BUSINESS METRICS ---------------- #
+
+@app.get("/businesses/{business_id}/rating", status_code=200)
 def get_business_rating(business_id: int):
     """
-    GET /businesses/id/rating
-    Returns the average rating and review count for a specific business.
+    Returns rating and review count.
     """
     con = get_connection()
-    result = db.get_average_rating_for_business(con, business_id)
-    return result
+    return db.get_average_rating_for_business(con, business_id)
 
 
-@app.get("/businesses/{business_id}/bookings/count")
+@app.get("/businesses/{business_id}/bookings/count", status_code=200)
 def total_bookings_for_business(business_id: int):
     """
-    GET /businesses/id/bookings/count
-    Returns the total number of bookings for a specific business.
+    Returns total booking count.
     """
     con = get_connection()
     return db.get_total_bookings_for_business(con, business_id)
 
-
-@app.get("/staff/{staff_id}/services")
-def get_staff_services(staff_id: int):
-    """
-    GET /staff/id/services
-    Returns all services that a specific staff member can perform.
-    """
-    con = get_connection()
-    return db.get_services_for_staff(con, staff_id)
-
-
-@app.get("/services/{service_id}/staff")
-def get_staff_for_service(service_id: int):
-    """
-    GET /services/id/staff
-    Returns all staff members who can perform a specific service.
-    """
-    con = get_connection()
-    return db.get_staff_for_service(con, service_id)
-
-
-@app.get("/categories/{category_id}/businesses")
-def list_businesses_by_category(category_id: int):
-    """
-    GET /categories/id/businesses
-    Returns all businesses associated with a specific category.
-    """
-    con = get_connection()
-    businesses = db.get_businesses_by_category(con, category_id)
-
-    if not businesses:
-        return {
-            "category_id": category_id,
-            "businesses": []
-        }
-
-    return {
-        "category_id": category_id,
-        "businesses": businesses
-    }
 
 #-------------------------#
 #---------POST------------#
@@ -528,8 +448,7 @@ def list_businesses_by_category(category_id: int):
 @app.post("/businesses/", status_code=201)
 def create_business(business: BusinessCreate):
     """
-    POST /businesses
-    Creates a new business and returns its id.
+    Creates a business.
     """
     con = get_connection()
     new_id = db.create_business(con, business)
@@ -539,8 +458,7 @@ def create_business(business: BusinessCreate):
 @app.post("/users/", status_code=201)
 def create_user(user: UserCreate):
     """
-    POST /users/
-    Creates a new user and returns its id.
+    Creates a user.
     """
     con = get_connection()
     new_id = db.create_user(con, user)
@@ -550,8 +468,7 @@ def create_user(user: UserCreate):
 @app.post("/categories", status_code=201)
 def create_category(data: CategoryCreate):
     """
-    POST /categories
-    Creates a new category and returns its id.
+    Creates a category.
     """
     con = get_connection()
     new_id = db.create_category(con, data)
@@ -559,10 +476,9 @@ def create_category(data: CategoryCreate):
 
 
 @app.post("/staffmembers", status_code=201)
-def create_staffmember_route(data: StaffMemberCreate):
+def create_staffmember(data: StaffMemberCreate):
     """
-    POST /staffmembers
-    Creates a new staff member and returns its id.
+    Creates a staff member.
     """
     con = get_connection()
     new_id = db.create_staffmember(con, data)
@@ -570,79 +486,68 @@ def create_staffmember_route(data: StaffMemberCreate):
 
 
 @app.post("/business-images", status_code=201)
-def create_business_image_route(data: BusinessImageCreate):
+def create_business_image(data: BusinessImageCreate):
     """
-    POST /business-images
-    Creates a new business image and returns its id.
+    Creates a business image.
     """
     con = get_connection()
     new_id = db.create_business_image(con, data)
     return {"id": new_id}
 
 
-@app.post("/services/", response_model=dict)
+@app.post("/services/", status_code=201)
 def create_service_endpoint(service: ServiceCreate):
     """
-    POST /services/
-    Creates a new service and returns the created service data.
+    Creates a service.
     """
     con = get_connection()
-    new_service = db.create_service(con, service.dict())
-    return new_service
+    return db.create_service(con, service.dict())
 
 
-@app.post("/services/{service_id}/categories/{category_id}")
+@app.post("/services/{service_id}/categories/{category_id}", status_code=200)
 def add_category(service_id: int, category_id: int):
     """
-    POST /services/id/categories/id
-    Adds a category to a service. Returns status indicating the result.
+    Adds category to service.
     """
     con = get_connection()
     res = db.add_category_to_service(con, service_id, category_id)
     return {"status": "added" if res else "already exists"}
 
 
-@app.post("/bookings/", response_model=BookingOut)
+@app.post("/bookings/", response_model=BookingOut, status_code=201)
 def create_booking_endpoint(data: BookingCreate):
     """
-    POST /bookings/
-    Creates a new booking and returns the created booking data.
+    Creates a booking.
     """
     con = get_connection()
-    booking = db.create_booking(con, data.dict())
-    return booking
+    return db.create_booking(con, data.dict())
 
 
 @app.post("/payments", response_model=PaymentOut, status_code=201)
 def create_payment_route(data: PaymentCreate):
     """
-    POST /payments
-    Creates a new payment and returns the payment data.
+    Creates a payment.
     """
     con = get_connection()
-    payment = db.create_payment(con, data)
-    return payment
+    return db.create_payment(con, data)
 
 
-@app.post("/reviews", response_model=ReviewOut)
+@app.post("/reviews", response_model=ReviewOut, status_code=201)
 def create_review_endpoint(data: ReviewCreate):
     """
-    POST /reviews
-    Creates a new review and returns the review data.
+    Creates a review.
     """
     con = get_connection()
-    review = db.create_review(con, data)
-    return review
+    return db.create_review(con, data)
 
 
-@app.post("/staff/{staff_id}/services/{service_id}")
+@app.post("/staff/{staff_id}/services/{service_id}", status_code=200)
 def assign_service_to_staff(staff_id: int, service_id: int):
     """
-    POST /staff/id/services/id
-    Assigns a service to a staff member.
+    Assigns service to staff.
     """
     con = get_connection()
-    result = db.add_service_to_staff(con, staff_id, service_id)
+    db.add_service_to_staff(con, staff_id, service_id)
     return {"status": "assigned"}
 
 
@@ -650,97 +555,80 @@ def assign_service_to_staff(staff_id: int, service_id: int):
 #----------PUT------------#
 #-------------------------#
 
-@app.put("/businesses/{business_id}", response_model=BusinessOut)
+@app.put("/businesses/{business_id}", response_model=BusinessOut, status_code=200)
 def update_business(business_id: int, data: BusinessUpdate):
     """
-    PUT /businesses/{business_id}
-    Updates an existing business and returns the updated record.
+    Updates a business.
     """
     con = get_connection()
     updated = db.update_business(con, business_id, data)
-
     if not updated:
         raise HTTPException(status_code=404, detail="Business not found")
-
     return updated
 
 
-@app.put("/users/{user_id}", response_model=UserOut)
+@app.put("/users/{user_id}", response_model=UserOut, status_code=200)
 def update_user(user_id: int, data: UserUpdate):
     """
-    PUT /users/{user_id}
-    Updates an existing user and returns the updated record.
+    Updates a user.
     """
     con = get_connection()
     updated = db.update_user(con, user_id, data)
-    
     if not updated:
         raise HTTPException(status_code=404, detail="User not found")
-    
     return updated
 
 
-@app.put("/categories/{category_id}", response_model=CategoryOut)
+@app.put("/categories/{category_id}", response_model=CategoryOut, status_code=200)
 def update_category(category_id: int, data: CategoryUpdate):
     """
-    PUT /categories/id
-    Updates a category and returns the updated data, or 404 if not found.
+    Updates a category.
     """
     con = get_connection()
     updated = db.update_category(con, category_id, data)
-
     if not updated:
         raise HTTPException(status_code=404, detail="Category not found")
-
     return updated
 
 
-@app.put("/staffmembers/{staff_id}", response_model=StaffMemberOut)
-def update_staffmember_route(staff_id: int, data: StaffMemberUpdate):
+@app.put("/staffmembers/{staff_id}", response_model=StaffMemberOut, status_code=200)
+def update_staffmember(staff_id: int, data: StaffMemberUpdate):
     """
-    PUT /staffmembers/id
-    Updates a staff member and returns the updated data, or 404 if not found.
+    Updates a staff member.
     """
     con = get_connection()
     updated = db.update_staffmember(con, staff_id, data)
-
     if not updated:
         raise HTTPException(status_code=404, detail="Staff member not found")
-
     return updated
 
 
-@app.put("/businesses/{business_id}/opening-hours")
+@app.put("/businesses/{business_id}/opening-hours", status_code=200)
 def update_opening_hours_for_business(business_id: int, opening_hours: OpeningHoursUpdateRequest):
     """
-    PUT /businesses/id/opening-hours
-    Replaces the opening hours for a business.
+    Replaces opening hours for a business.
     """
     con = get_connection()
     db.replace_opening_hours(con, business_id, opening_hours.hours)
     return {"message": "Opening hours updated successfully"}
 
 
-@app.put("/services/{service_id}")
+@app.put("/services/{service_id}", status_code=200)
 def update_service_endpoint(service_id: int, updated: ServiceUpdate):
     """
-    PUT /services/id
-    Updates a service and returns the updated data, or 404 if not found.
+    Updates a service.
     """
     con = get_connection()
-    updated_service = db.update_service(con, service_id, updated.dict())
-    
-    if not updated_service:
+    new_data = db.update_service(con, service_id, updated.dict())
+    if not new_data:
         raise HTTPException(status_code=404, detail="Service not found")
+    return new_data
 
-    return updated_service
 
-
-@app.put("/bookings/{booking_id}", response_model=BookingOut)
+@app.put("/bookings/{booking_id}", response_model=BookingOut, status_code=200)
 def update_booking_endpoint(booking_id: int, data: BookingUpdate):
     """
-    PUT /bookings/id
-    Updates a booking and returns the updated data, or 404 if not found.
+    Updates a booking.
     """
     con = get_connection()
     updated = db.update_booking(con, booking_id, data.dict())
@@ -749,11 +637,10 @@ def update_booking_endpoint(booking_id: int, data: BookingUpdate):
     return updated
 
 
-@app.put("/reviews/{review_id}", response_model=ReviewOut)
+@app.put("/reviews/{review_id}", response_model=ReviewOut, status_code=200)
 def update_review_endpoint(review_id: int, data: ReviewUpdate):
     """
-    PUT /reviews/id
-    Updates a review and returns the updated data, or 404 if not found.
+    Updates a review.
     """
     con = get_connection()
     updated = db.update_review(con, review_id, data)
@@ -766,34 +653,27 @@ def update_review_endpoint(review_id: int, data: ReviewUpdate):
 #----------PATCH----------#
 #-------------------------#
 
-@app.patch("/bookings/{booking_id}/status", response_model=BookingOut)
+@app.patch("/bookings/{booking_id}/status", response_model=BookingOut, status_code=200)
 def update_booking_status_endpoint(booking_id: int, data: BookingStatusUpdate):
     """
-    PATCH /bookings/id/status
-    Updates the status of a booking, or returns 404 if not found.
+    Updates booking status.
     """
     con = get_connection()
-
     updated = db.update_booking_status(con, booking_id, data.status)
-
     if not updated:
         raise HTTPException(status_code=404, detail="Booking not found")
-
     return updated
 
 
-@app.patch("/payments/{payment_id}/status", response_model=PaymentOut)
+@app.patch("/payments/{payment_id}/status", response_model=PaymentOut, status_code=200)
 def update_payment_status_route(payment_id: int, data: PaymentStatusUpdate):
     """
-    PATCH /payments/id/status
-    Updates the status of a payment, or returns 404 if not found.
+    Updates payment status.
     """
     con = get_connection()
     updated = db.update_payment_status(con, payment_id, data.status)
-
     if not updated:
         raise HTTPException(status_code=404, detail="Payment not found")
-
     return updated
 
 
@@ -804,149 +684,117 @@ def update_payment_status_route(payment_id: int, data: PaymentStatusUpdate):
 @app.delete("/businesses/{business_id}", status_code=204)
 def delete_business(business_id: int):
     """
-    DELETE /businesses/{business_id}
-    Deletes an existing business.
+    Deletes a business.
     """
     con = get_connection()
     deleted = db.delete_business(con, business_id)
-
     if not deleted:
         raise HTTPException(status_code=404, detail="Business not found")
-
-    return None
 
 
 @app.delete("/users/{user_id}", status_code=204)
 def delete_user(user_id: int):
     """
-    DELETE /users/{user_id}
-    Deletes an existing user.
+    Deletes a user.
     """
     con = get_connection()
     deleted = db.delete_user(con, user_id)
-    
     if not deleted:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    return None
 
 
 @app.delete("/categories/{category_id}", status_code=204)
 def delete_category(category_id: int):
     """
-    DELETE /categories/id
-    Deletes a category, or returns 404 if not found.
+    Deletes a category.
     """
     con = get_connection()
     deleted = db.delete_category(con, category_id)
-
     if not deleted:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    return None
-
 
 @app.delete("/staffmembers/{staff_id}", status_code=204)
-def delete_staffmember_route(staff_id: int):
+def delete_staffmember(staff_id: int):
     """
-    DELETE /staffmembers/id
-    Deletes a staff member, or returns 404 if not found.
+    Deletes a staff member.
     """
     con = get_connection()
     deleted = db.delete_staffmember(con, staff_id)
-
     if not deleted:
         raise HTTPException(status_code=404, detail="Staff member not found")
 
-    return None
-
 
 @app.delete("/business-images/{image_id}", status_code=204)
-def delete_business_image_route(image_id: int):
+def delete_business_image(image_id: int):
     """
-    DELETE /business-images/id
-    Deletes a business image, or returns 404 if not found.
+    Deletes a business image.
     """
     con = get_connection()
     deleted = db.delete_business_image(con, image_id)
-
     if not deleted:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    return None
 
-
-@app.delete("/services/{service_id}")
+@app.delete("/services/{service_id}", status_code=204)
 def delete_service_endpoint(service_id: int):
     """
-    DELETE /services/id
-    Deletes a service, or returns 404 if not found.
+    Deletes a service.
     """
     con = get_connection()
-    result = db.delete_service(con, service_id)
-    
-    if not result:
+    deleted = db.delete_service(con, service_id)
+    if not deleted:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    return {"message": "Service deleted"}
 
-
-@app.delete("/services/{service_id}/categories/{category_id}")
+@app.delete("/services/{service_id}/categories/{category_id}", status_code=200)
 def remove_category(service_id: int, category_id: int):
     """
-    DELETE /services/id/categories/id
-    Removes a category from a service.
+    Removes category from service.
     """
     con = get_connection()
-    res = db.remove_category_from_service(con, service_id, category_id)
-    return {"status": "removed" if res else "not found"}
+    result = db.remove_category_from_service(con, service_id, category_id)
+    return {"status": "removed" if result else "not found"}
 
 
-@app.delete("/bookings/{booking_id}")
+@app.delete("/bookings/{booking_id}", status_code=204)
 def delete_booking_endpoint(booking_id: int):
     """
-    DELETE /bookings/id
-    Deletes a booking, or returns 404 if not found.
+    Deletes a booking.
     """
     con = get_connection()
     deleted = db.delete_booking(con, booking_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Booking not found")
-    return {"message": "Booking deleted"}
 
 
 @app.delete("/payments/{payment_id}", status_code=204)
 def delete_payment_route(payment_id: int):
     """
-    DELETE /payments/id
-    Deletes a payment, or returns 404 if not found.
+    Deletes a payment.
     """
     con = get_connection()
     deleted = db.delete_payment(con, payment_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Payment not found")
-    return None
 
 
 @app.delete("/reviews/{review_id}", status_code=204)
 def delete_review_endpoint(review_id: int):
     """
-    DELETE /reviews/id
-    Deletes a review, or returns 404 if not found.
+    Deletes a review.
     """
     con = get_connection()
     deleted = db.delete_review(con, review_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Review not found")
-    return None
 
 
-@app.delete("/staff/{staff_id}/services/{service_id}")
+@app.delete("/staff/{staff_id}/services/{service_id}", status_code=200)
 def remove_service_from_staff(staff_id: int, service_id: int):
     """
-    DELETE /staff/id/services/id
-    Removes a service assignment from a staff member.
+    Removes service from staff.
     """
     con = get_connection()
-    removed = db.remove_service_from_staff(con, staff_id, service_id)
-    return {"status": "removed" if removed else "not found"}
+    result = db.remove_service_from_staff(con, staff_id, service_id)
+    return {"status": "removed" if result else "not found"}
