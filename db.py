@@ -58,7 +58,8 @@ def get_business_by_id(con, business_id: int):
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""SELECT 
+            cursor.execute("""
+                SELECT 
                     businesses.id,
                     businesses.owner_id,
                     businesses.main_category_id,
@@ -126,7 +127,8 @@ def get_all_staffmembers(con):
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""SELECT
+            cursor.execute("""
+                SELECT
                     staffmembers.id,
                     staffmembers.business_id,
                     staffmembers.name,
@@ -137,7 +139,8 @@ def get_all_staffmembers(con):
                     businesses.name AS business_name
                 FROM staffmembers
                 JOIN businesses ON businesses.id = staffmembers.business_id
-                ORDER BY staffmembers.name;""")
+                ORDER BY staffmembers.name;
+            """)
             return cursor.fetchall()
 
 
@@ -166,7 +169,7 @@ def get_staffmember_by_id(con, staff_id: int):
 
 def get_staffmembers_by_business(con, business_id: int):
     """
-    Get att the staff in one buissness
+    Get all the staff in one business
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -246,7 +249,7 @@ def get_services_by_business(con, business_id: int):
                 FROM services
                 JOIN businesses ON businesses.id = services.business_id
                 WHERE services.business_id = %s;
-            """, (business_id,))
+                """, (business_id,),)
             services = cursor.fetchall()
 
     # Attach category names (list) to each service
@@ -275,17 +278,17 @@ def get_categories_for_service(con, service_id: int):
     Returns all categories linked to a specific service.
     """
     with con:
-        with con.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
                 """
-                SELECT c.*
-                FROM categories c
-                JOIN service_categories sc ON c.id = sc.category_id
-                WHERE sc.service_id = %s;
+                SELECT categories.*
+                FROM categories
+                JOIN service_categories ON categories.id = service_categories.category_id
+                WHERE service_categories.service_id = %s;
                 """,
                 (service_id,),
             )
-            return cur.fetchall()
+            return cursor.fetchall()
 
 
 def get_services_for_category(con, category_id: int):
@@ -293,17 +296,19 @@ def get_services_for_category(con, category_id: int):
     Returns all services linked to a specific category.
     """
     with con:
-        with con.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
                 """
-                SELECT s.*
-                FROM services s
-                JOIN service_categories sc ON s.id = sc.service_id
-                WHERE sc.category_id = %s;
+                SELECT services.*,
+                    businesses.name AS business_name
+                FROM services
+                JOIN service_categories ON services.id = service_categories.service_id
+                JOIN businesses ON businesses.id = services.business_id
+                WHERE service_categories.category_id = %s;
                 """,
                 (category_id,),
             )
-            return cur.fetchall()
+            return cursor.fetchall()
 
 
 def get_services_by_business_and_category(con, business_id: int, category_id: int):
@@ -314,12 +319,14 @@ def get_services_by_business_and_category(con, business_id: int, category_id: in
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT s.*
-                FROM services s
-                JOIN service_categories sc ON s.id = sc.service_id
-                WHERE s.business_id = %s
-                AND sc.category_id = %s;
-            """,
+                SELECT services.*,
+                    businesses.name AS business_name
+                FROM services
+                JOIN service_categories ON services.id = service_categories.service_id
+                JOIN businesses ON businesses.id = services.business_id
+                WHERE services.business_id = %s
+                    AND service_categories.category_id = %s;
+                """,
                 (business_id, category_id),
             )
             return cursor.fetchall()
@@ -333,12 +340,12 @@ def get_categories_for_business(con, business_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT DISTINCT c.*
-                FROM categories c
-                JOIN service_categories sc ON c.id = sc.category_id
-                JOIN services s ON sc.service_id = s.id
-                WHERE s.business_id = %s;
-            """,
+                SELECT DISTINCT categories.*
+                FROM categories
+                JOIN service_categories ON categories.id = service_categories.category_id
+                JOIN services ON service_categories.service_id = services.id
+                WHERE services.business_id = %s;
+                """,
                 (business_id,),
             )
             return cursor.fetchall()
@@ -354,11 +361,13 @@ def get_services_by_categories(con, category_ids: list[int]):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 f"""
-                SELECT DISTINCT s.*
-                FROM services s
-                JOIN service_categories sc ON s.id = sc.service_id
-                WHERE sc.category_id IN ({placeholders});
-            """,
+                SELECT DISTINCT services.*,
+                            businesses.name AS business_name
+                FROM services
+                JOIN service_categories ON services.id = service_categories.service_id
+                JOIN businesses ON businesses.id = services.business_id
+                WHERE service_categories.category_id IN ({placeholders});
+                """,
                 category_ids,
             )
             return cursor.fetchall()
@@ -370,7 +379,20 @@ def get_booking(con, booking_id: int):
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM bookings WHERE id = %s;", (booking_id,))
+            cursor.execute("""
+                SELECT 
+                    bookings.*,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name,
+                    staffmembers.name AS staff_name
+                FROM bookings
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id
+                LEFT JOIN staffmembers ON staffmembers.id = bookings.staff_id
+                WHERE bookings.id = %s;
+            """, (booking_id,))
             return cursor.fetchone()
 
 
@@ -380,7 +402,20 @@ def get_bookings(con):
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM bookings;")
+            cursor.execute("""
+                SELECT 
+                    bookings.*,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name,
+                    staffmembers.name AS staff_name
+                FROM bookings
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id
+                LEFT JOIN staffmembers ON staffmembers.id = bookings.staff_id
+                ORDER BY bookings.starttime;
+            """)
             return cursor.fetchall()
 
 
@@ -392,10 +427,20 @@ def get_bookings_by_customer(con, customer_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT * FROM bookings
-                WHERE customer_id = %s
-                ORDER BY starttime;
-            """,
+                SELECT 
+                    bookings.*,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name,
+                    staffmembers.name AS staff_name
+                FROM bookings
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id
+                LEFT JOIN staffmembers ON staffmembers.id = bookings.staff_id
+                WHERE bookings.customer_id = %s
+                ORDER BY bookings.starttime;
+                """,
                 (customer_id,),
             )
             return cursor.fetchall()
@@ -409,10 +454,20 @@ def get_bookings_by_business(con, business_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT * FROM bookings
-                WHERE business_id = %s
-                ORDER BY starttime;
-            """,
+                SELECT 
+                    bookings.*,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name,
+                    staffmembers.name AS staff_name
+                FROM bookings
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id
+                LEFT JOIN staffmembers ON staffmembers.id = bookings.staff_id
+                WHERE bookings.business_id = %s
+                ORDER BY bookings.starttime;
+                """,
                 (business_id,),
             )
             return cursor.fetchall()
@@ -426,10 +481,20 @@ def get_bookings_by_staff(con, staff_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT * FROM bookings
-                WHERE staff_id = %s
-                ORDER BY starttime;
-            """,
+                SELECT 
+                    bookings.*,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name,
+                    staffmembers.name AS staff_name
+                FROM bookings
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id
+                LEFT JOIN staffmembers ON staffmembers.id = bookings.staff_id
+                WHERE bookings.staff_id = %s
+                ORDER BY bookings.starttime;
+                """,
                 (staff_id,),
             )
             return cursor.fetchall()
@@ -443,10 +508,20 @@ def get_bookings_by_service(con, service_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT * FROM bookings
-                WHERE service_id = %s
-                ORDER BY starttime;
-            """,
+                SELECT 
+                    bookings.*,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name,
+                    staffmembers.name AS staff_name
+                FROM bookings
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id
+                LEFT JOIN staffmembers ON staffmembers.id = bookings.staff_id
+                WHERE bookings.service_id = %s
+                ORDER BY bookings.starttime;
+                """,
                 (service_id,),
             )
             return cursor.fetchall()
@@ -454,11 +529,23 @@ def get_bookings_by_service(con, service_id: int):
 
 def get_all_payments(con):
     """
-    Returns all bookings for a specific service.
+    Returns all payments in the database.
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM payments;")
+            cursor.execute("""
+                SELECT 
+                    payments.*,
+                    bookings.starttime AS booking_starttime,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name
+                FROM payments
+                JOIN bookings ON bookings.id = payments.booking_id
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id;
+            """)
             return cursor.fetchall()
 
 
@@ -468,7 +555,20 @@ def get_payment(con, payment_id: int):
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM payments WHERE id = %s;", (payment_id,))
+            cursor.execute("""
+                SELECT 
+                    payments.*,
+                    bookings.starttime AS booking_starttime,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name
+                FROM payments
+                JOIN bookings ON bookings.id = payments.booking_id
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id
+                WHERE payments.id = %s;
+            """, (payment_id,))
             return cursor.fetchone()
 
 
@@ -479,7 +579,20 @@ def get_payments_by_booking(con, booking_id: int):
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                "SELECT * FROM payments WHERE booking_id = %s;", (booking_id,)
+                """
+                SELECT 
+                    payments.*,
+                    bookings.starttime AS booking_starttime,
+                    users.firstname || ' ' || users.lastname AS customer_name,
+                    businesses.name AS business_name,
+                    services.name AS service_name
+                FROM payments
+                JOIN bookings ON bookings.id = payments.booking_id
+                JOIN users ON users.id = bookings.customer_id
+                JOIN businesses ON businesses.id = bookings.business_id
+                JOIN services ON services.id = bookings.service_id
+                WHERE payments.booking_id = %s;
+            """, (booking_id,)
             )
             return cursor.fetchall()
 
@@ -492,12 +605,12 @@ def get_total_revenue_for_business(con, business_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT COALESCE(SUM(p.amount), 0) AS total_revenue
-                FROM payments p
-                JOIN bookings b ON p.booking_id = b.id
-                WHERE b.business_id = %s
-                AND p.status = 'paid';
-            """,
+                SELECT COALESCE(SUM(payments.amount), 0) AS total_revenue
+                FROM payments
+                JOIN bookings ON payments.booking_id = bookings.id
+                WHERE bookings.business_id = %s
+                    AND payments.status = 'paid';
+                """,
                 (business_id,),
             )
             return cursor.fetchone()
@@ -510,11 +623,11 @@ def get_unpaid_bookings(con):
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("""
-                SELECT b.*
-                FROM bookings b
-                LEFT JOIN payments p ON p.booking_id = b.id
-                    AND p.status = 'paid'
-                WHERE p.id IS NULL;
+                SELECT bookings.*
+                FROM bookings
+                LEFT JOIN payments ON payments.booking_id = bookings.id
+                    AND payments.status = 'paid'
+                WHERE payments.id IS NULL;
             """)
             return cursor.fetchall()
 
@@ -527,14 +640,14 @@ def get_unpaid_bookings_for_business(con, business_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT b.*
-                FROM bookings b
-                LEFT JOIN payments p 
-                    ON p.booking_id = b.id
-                    AND p.status = 'paid'
-                WHERE b.business_id = %s
-                AND p.id IS NULL;
-            """,
+                SELECT bookings.*
+                FROM bookings
+                LEFT JOIN payments
+                    ON payments.booking_id = bookings.id
+                    AND payments.status = 'paid'
+                WHERE bookings.business_id = %s
+                    AND payments.id IS NULL;
+                """,
                 (business_id,),
             )
             return cursor.fetchall()
@@ -547,24 +660,18 @@ def get_review(con, review_id: int):
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                """SELECT
-            reviews.id,
-            reviews.booking_id,
-            s.name AS service_name,
-            reviews.business_id,
-            bs.name AS business_name,
-            reviews.customer_id,
-            users.firstname ||' '|| users.lastname AS customer_name,
-            reviews.rating,
-            reviews.title,
-            reviews.comment,
-            reviews.created_at
-            FROM reviews
-            JOIN users ON users.id = reviews.customer_id
-            JOIN businesses bs ON bs.id = reviews.business_id
-            JOIN bookings b ON b.id = reviews.booking_id
-            JOIN services s ON s.id = b.service_id
-            WHERE reviews.id = %s;""",
+                """
+                SELECT reviews.*,
+                    services.name AS service_name,
+                    businesses.name AS business_name,
+                    users.firstname || ' ' || users.lastname AS customer_name
+                FROM reviews
+                JOIN users ON users.id = reviews.customer_id
+                JOIN businesses ON businesses.id = reviews.business_id
+                JOIN bookings ON bookings.id = reviews.booking_id
+                JOIN services ON services.id = bookings.service_id
+                WHERE reviews.id = %s;
+                """,
                 (review_id,),
             )
             return cursor.fetchone()
@@ -576,7 +683,18 @@ def get_all_reviews(con):
     """
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM reviews ORDER BY created_at DESC;")
+            cursor.execute("""
+                SELECT reviews.*,
+                    services.name AS service_name,
+                    businesses.name AS business_name,
+                    users.firstname || ' ' || users.lastname AS customer_name
+                FROM reviews
+                JOIN users ON users.id = reviews.customer_id
+                JOIN businesses ON businesses.id = reviews.business_id
+                JOIN bookings ON bookings.id = reviews.booking_id
+                JOIN services ON services.id = bookings.service_id
+                ORDER BY reviews.created_at DESC;
+                """)
             return cursor.fetchall()
 
 
@@ -588,11 +706,18 @@ def get_reviews_by_business(con, business_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT *
+                SELECT reviews.*,
+                    services.name AS service_name,
+                    businesses.name AS business_name,
+                    users.firstname || ' ' || users.lastname AS customer_name
                 FROM reviews
-                WHERE business_id = %s
-                ORDER BY created_at DESC;
-            """,
+                JOIN users ON users.id = reviews.customer_id
+                JOIN businesses ON businesses.id = reviews.business_id
+                JOIN bookings ON bookings.id = reviews.booking_id
+                JOIN services ON services.id = bookings.service_id
+                WHERE reviews.business_id = %s
+                ORDER BY reviews.created_at DESC;
+                """,
                 (business_id,),
             )
             return cursor.fetchall()
@@ -606,11 +731,18 @@ def get_reviews_by_customer(con, customer_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT *
+                SELECT reviews.*,
+                    services.name AS service_name,
+                    businesses.name AS business_name,
+                    users.firstname || ' ' || users.lastname AS customer_name
                 FROM reviews
-                WHERE customer_id = %s
-                ORDER BY created_at DESC;
-            """,
+                JOIN users ON users.id = reviews.customer_id
+                JOIN businesses ON businesses.id = reviews.business_id
+                JOIN bookings ON bookings.id = reviews.booking_id
+                JOIN services ON services.id = bookings.service_id
+                WHERE reviews.customer_id = %s
+                ORDER BY reviews.created_at DESC;
+                """,
                 (customer_id,),
             )
             return cursor.fetchall()
@@ -629,7 +761,7 @@ def get_average_rating_for_business(con, business_id: int):
                     COUNT(*) AS review_count
                 FROM reviews
                 WHERE business_id = %s;
-            """,
+                """,
                 (business_id,),
             )
             return cursor.fetchone()
@@ -645,17 +777,17 @@ def get_top_rated_businesses(con, limit: int = 10):
             cursor.execute(
                 """
                 SELECT 
-                    b.id AS business_id,
-                    b.name,
-                    COALESCE(AVG(r.rating), 0) AS average_rating,
-                    COUNT(r.id) AS review_count
-                FROM businesses b
-                LEFT JOIN reviews r ON r.business_id = b.id
-                GROUP BY b.id
-                HAVING COUNT(r.id) > 0   -- Only include businesses with reviews
+                    businesses.id AS business_id,
+                    businesses.name,
+                    COALESCE(AVG(reviews.rating), 0) AS average_rating,
+                    COUNT(reviews.id) AS review_count
+                FROM businesses
+                LEFT JOIN reviews ON reviews.business_id = businesses.id
+                GROUP BY businesses.id
+                HAVING COUNT(reviews.id) > 0
                 ORDER BY average_rating DESC, review_count DESC
                 LIMIT %s;
-            """,
+                """,
                 (limit,),
             )
             return cursor.fetchall()
@@ -672,7 +804,7 @@ def get_total_bookings_for_business(con, business_id: int):
                 SELECT COUNT(*) AS total_bookings
                 FROM bookings
                 WHERE business_id = %s;
-            """,
+                """,
                 (business_id,),
             )
             return cursor.fetchone()
@@ -682,60 +814,60 @@ def get_services_for_staff(con, staff_id: int):
     Returns all services assigned to a specific staff member.
     """
     with con:
-        with con.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT s.*
-                FROM services s
-                JOIN staff_service ss ON ss.service_id = s.id
-                WHERE ss.staff_id = %s;
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT services.*
+                FROM services
+                JOIN staff_service ON staff_service.service_id = services.id
+                WHERE staff_service.staff_id = %s;
             """, (staff_id,))
-            return cur.fetchall()
+            return cursor.fetchall()
 
 def get_staff_for_service(con, service_id: int):
     """
     Returns all staff members who are assigned to a specific service.
     """
     with con:
-        with con.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT st.*
-                FROM staffmembers st
-                JOIN staff_service ss ON ss.staff_id = st.id
-                WHERE ss.service_id = %s;
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT staffmembers.*
+                FROM staffmembers
+                JOIN staff_service ON staff_service.staff_id = staffmembers.id
+                WHERE staff_service.service_id = %s;
             """, (service_id,))
-            return cur.fetchall()
+            return cursor.fetchall()
         
 def get_business_categories(con, business_id: int):
     """
     Returns all category names associated with a specific business.
     """
     with con:
-        with con.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT DISTINCT c.name
-                FROM categories c
-                JOIN service_categories sc ON sc.category_id = c.id
-                JOIN services s ON s.id = sc.service_id
-                WHERE s.business_id = %s
-                ORDER BY c.name;
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT DISTINCT categories.name
+                FROM categories
+                JOIN service_categories ON service_categories.category_id = categories.id
+                JOIN services ON services.id = service_categories.service_id
+                WHERE services.business_id = %s
+                ORDER BY categories.name;
             """, (business_id,))
-            return [row["name"] for row in cur.fetchall()]
+            return [row["name"] for row in cursor.fetchall()]
 
 def get_businesses_by_category(con, category_id: int):
     """
     Returns all businesses associated with a specific category.
     """
     with con:
-        with con.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT DISTINCT b.*
-                FROM businesses b
-                JOIN services s ON s.business_id = b.id
-                JOIN service_categories sc ON sc.service_id = s.id
-                WHERE sc.category_id = %s
-                ORDER BY b.name;
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT DISTINCT businesses.*
+                FROM businesses
+                JOIN services ON services.business_id = businesses.id
+                JOIN service_categories ON service_categories.service_id = services.id
+                WHERE service_categories.category_id = %s
+                ORDER BY businesses.name;
             """, (category_id,))
-            return cur.fetchall()
+            return cursor.fetchall()
 
 
 
@@ -1416,4 +1548,3 @@ def remove_service_from_staff(con, staff_id: int, service_id: int):
                 RETURNING staff_id;
             """, (staff_id, service_id))
             return cur.fetchone()
-

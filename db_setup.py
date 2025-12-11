@@ -7,7 +7,6 @@ load_dotenv(override=True)
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 PASSWORD = os.getenv("PASSWORD")
 
-
 def get_connection():
     """
     Function that returns a single connection
@@ -46,7 +45,7 @@ def reset_database():
     connection.commit()
     cursor.close()
     connection.close()
-    print("🧨 All tables dropped successfully.")
+    print("All tables dropped successfully.")
 def create_tables():
     """
     Creates all necessary tables for the BokaDirekt booking system.    
@@ -153,7 +152,7 @@ def create_tables():
     );
     """)
     
-        # SERVICE - STAFFMEMBERS (Many-to-Many)
+    # SERVICE - STAFFMEMBERS (Many-to-Many)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS staff_service (
     staff_id BIGINT NOT NULL REFERENCES staffmembers(id) ON DELETE CASCADE,

@@ -4,7 +4,7 @@
 
 from datetime import datetime, time
 from decimal import Decimal
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -54,7 +54,7 @@ class BusinessOut(BusinessBase):
 
 class BusinessDetail(BusinessOut):
     owner_name: str
-    main_category_name: str
+    main_category_name: Optional[str] = None
 
 
 #-----------------#
@@ -257,9 +257,10 @@ class ServiceUpdate(ServiceBase):
     
 class ServiceDetail(ServiceBase):
     """
-    Extended service schema including the business name.
+    Extended service schema including the business name and categories.
     """
     business_name:str
+    categories: List[CategoryOut] = []
     
 #-----------------#
 #-----BOOKINGS----#
@@ -290,11 +291,21 @@ class BookingStatusUpdate(BaseModel):
     """
     Schema for updating the status of a booking.
     """
-    status: str  # must be one of your allowed values
     status: str = Field(
         ...,
         pattern="^(pending|confirmed|cancelled|completed)$"
     )
+
+class BookingOut(BookingBase):
+    """
+    Read model for bookings.
+    Includes both foreign key IDs and human-friendly names.
+    """
+    id: int
+    customer_name: str
+    business_name: str
+    service_name: str
+    staff_name: Optional[str] = None
 
 #-----------------#
 #-----PAYMENTS----#
@@ -327,6 +338,12 @@ class PaymentOut(PaymentBase):
     """
     id: int
     created_at: datetime
+    
+    # Extra fields for readability
+    customer_name: str
+    business_name: str
+    service_name: str
+    booking_starttime: datetime
 
 class PaymentStatusUpdate(BaseModel):
     """
@@ -362,15 +379,10 @@ class ReviewUpdate(ReviewBase):
 
 class ReviewOut(ReviewBase):
     """
-    Output schema for a review, including id and timestamp.
+    Output schema for a review, including id, timestamp and names.    
     """
     id: int
     created_at: datetime
-
-class ReviewDetail(ReviewOut):
-    """
-    Extended review schema including related service, business, and customer names.
-    """
     service_name: str
     business_name: str
     customer_name: str
