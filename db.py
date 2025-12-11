@@ -2,6 +2,8 @@ from typing import Optional
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from datetime import datetime, timedelta
+
 
 """
 This file is responsible for making database queries, which your fastapi endpoints/routes can use.
@@ -237,14 +239,7 @@ def get_services_by_business(con, business_id: int):
         with con.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
-                SELECT
-                    services.id,
-                    services.business_id,
-                    services.name,
-                    services.description,
-                    services.duration_minutes,
-                    services.price,
-                    services.is_active,
+                SELECT services.*,
                     businesses.name AS business_name
                 FROM services
                 JOIN businesses ON businesses.id = services.business_id
@@ -869,6 +864,31 @@ def get_businesses_by_category(con, category_id: int):
             """, (category_id,))
             return cursor.fetchall()
 
+def get_business_hours_for_date(con, business_id: int, weekday: int):
+    """
+    Returns opening hours for a business on a given weekday.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT open_time, closing_time
+                FROM business_opening_hours
+                WHERE business_id = %s AND weekday = %s;
+            """, (business_id, weekday))
+            return cursor.fetchone()
+
+def get_bookings_for_business_and_date(con, business_id: int, date: str):
+    """
+    Returns all bookings for a business on a specific date.
+    """
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT starttime, endtime
+                FROM bookings
+                WHERE business_id = %s AND DATE(starttime) = %s;
+            """, (business_id, date))
+            return cursor.fetchall()
 
 
 # -------------------------#
@@ -1548,3 +1568,48 @@ def remove_service_from_staff(con, staff_id: int, service_id: int):
                 RETURNING staff_id;
             """, (staff_id, service_id))
             return cur.fetchone()
+
+
+
+#HELPER FUNCTIONS: 
+
+def generate_time_slots(open_time: str, closing_time: str, duration_minutes: int):
+    """
+    Generates all possible time slots between open_time and closing_time 
+    with the given duration.
+    """
+    slots = []
+    start = datetime.strptime(open_time, "%H:%M")
+    end = datetime.strptime(closing_time, "%H:%M")
+
+    while start + timedelta(minutes=duration_minutes) <= end:
+        slots.append(start.strftime("%H:%M"))
+        start += timedelta(minutes=duration_minutes)
+
+    return slots
+
+
+def filter_overlapping_slots(slots, duration_minutes, bookings):
+    """
+    Removes time slots that overlap with an existing booking.
+    """
+    available = []
+    duration = timedelta(minutes=duration_minutes)
+
+    for slot in slots:
+        slot_start = datetime.strptime(slot, "%H:%M")
+        slot_end = slot_start + duration
+
+        overlapping = False
+        for booking in bookings:
+            booking_start = booking["starttime"]
+            booking_end = booking["endtime"]
+
+            if not (slot_end <= booking_start or slot_start >= booking_end):
+                overlapping = True
+                break
+
+        if not overlapping:
+            available.append(slot)
+
+    return available

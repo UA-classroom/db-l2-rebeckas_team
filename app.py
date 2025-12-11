@@ -5,7 +5,7 @@ import os
 
 import db
 from db_setup import get_connection
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 from schemas import (
@@ -40,6 +40,7 @@ from schemas import (
     UserCreate,
     UserOut,
     UserUpdate,
+    AvailableSlotsOut
 )
 
 app = FastAPI()
@@ -445,6 +446,91 @@ def total_bookings_for_business(business_id: int):
     con = get_connection()
     return db.get_total_bookings_for_business(con, business_id)
 
+@app.get("/businesses/{business_id}/services/{service_id}/available-slots", response_model=AvailableSlotsOut)
+def get_available_slots(business_id: int, service_id: int, date: str):
+    """
+    GET /businesses/{id}/services/{id}/available-slots?date=YYYY-MM-DD
+    Returns available booking time slots for the given date.
+    """
+    con = get_connection()
+
+    # Convert weekday: Monday=1 ... Sunday=7
+    weekday = datetime.strptime(date, "%Y-%m-%d").isoweekday()
+
+    hours = db.get_business_hours_for_date(con, business_id, weekday)
+    if not hours:
+        raise HTTPException(status_code=404, detail="Business is closed on this day")
+
+    service = db.get_service(con, service_id)
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    duration = service["duration_minutes"]
+
+    bookings = db.get_bookings_for_business_and_date(con, business_id, date)
+
+    # Generate raw slots
+    slots = db.generate_time_slots(
+        hours["open_time"].strftime("%H:%M"),
+        hours["closing_time"].strftime("%H:%M"),
+        duration
+    )
+
+    # Filter out overlapping slots
+    available = db.filter_overlapping_slots(slots, duration, bookings)
+
+    return {
+        "date": date,
+        "service_duration": duration,
+        "available_slots": available
+    }
+
+@app.get("/categories/tree")
+def get_category_tree():
+    """
+    GET /categories/tree
+    Returns a full hierarchical category tree.
+    Each category includes a list of its child categories.
+    """
+    con = get_connection()
+    categories = db.get_all_categories(con)
+
+    # Build a dict for fast lookup
+    cat_dict = {category["id"]: {**category, "children": []} for category in categories}
+
+    # Build hierarchy
+    root_nodes = []
+    for category in categories:
+        if category["parent_id"] is None:
+            root_nodes.append(cat_dict[category["id"]])
+        else:
+            cat_dict[category["parent_id"]]["children"].append(cat_dict[category["id"]])
+
+    return root_nodes
+
+@app.get("/categories/{category_id}/children")
+def get_category_children(category_id: int):
+    """
+    GET /categories/{category_id}/children
+    Returns all direct child categories of a given category.
+    """
+    con = get_connection()
+    categories = db.get_all_categories(con)
+    return [category for category in categories if category["parent_id"] == category_id]
+
+@app.get("/categories/{category_id}/parent")
+def get_category_parent(category_id: int):
+    """
+    GET /categories/{category_id}/parent
+    Returns the parent category of a given category.
+    Returns null if the category has no parent.
+    """
+    con = get_connection()
+    category = db.get_category_by_id(con, category_id)
+    if not category or category["parent_id"] is None:
+        return None
+
+    return db.get_category_by_id(con, category["parent_id"])
 
 
 #-------------------------#

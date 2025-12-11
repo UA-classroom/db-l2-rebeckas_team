@@ -338,8 +338,6 @@ class PaymentOut(PaymentBase):
     """
     id: int
     created_at: datetime
-    
-    # Extra fields for readability
     customer_name: str
     business_name: str
     service_name: str
@@ -386,3 +384,12 @@ class ReviewOut(ReviewBase):
     service_name: str
     business_name: str
     customer_name: str
+    
+#-----------------#
+#-----EXTRAS------#
+#-----------------#   
+class AvailableSlotsOut(BaseModel):
+    date: str
+    service_duration: int
+    available_slots: list[str]
+
